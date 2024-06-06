@@ -9,19 +9,21 @@ export const createDirectory = async (ownerId, createINodeDto: any = {}) => {
   const name = createINodeDto.name;
   const description = createINodeDto.description;
 
-  const indexNode = await getDB().collection('indexNode').create({
-    data: {
-      type: 'd',
-      ownerId: ownerId,
-      parentId: parentId,
-      item: {
-        create: {
-          name,
-          description,
+  const indexNode = await getDB()
+    .collection('indexNode')
+    .create({
+      data: {
+        type: 'd',
+        ownerId: ownerId,
+        parentId: parentId,
+        item: {
+          create: {
+            name,
+            description,
+          },
         },
       },
-    },
-  });
+    });
 
   return indexNode;
 };
@@ -34,19 +36,21 @@ export const updateDirectory = async (
   const description = updateDirectoryDto.description;
 
   console.log('dfdfdf');
-  const indexNode = await getDB().collection('indexNode').update({
-    where: {
-      id: iNodeId,
-    },
-    data: {
-      item: {
-        update: {
-          name,
-          description,
+  const indexNode = await getDB()
+    .collection('indexNode')
+    .update({
+      where: {
+        id: iNodeId,
+      },
+      data: {
+        item: {
+          update: {
+            name,
+            description,
+          },
         },
       },
-    },
-  });
+    });
 
   return indexNode;
 };
@@ -242,11 +246,13 @@ export const upsertTemplate = async (ownerId, templateDto: any = {}) => {
   const itemNode: any = result[0];
   console.log('upsertTemplate itemNode', itemNode);
   if (itemNode) {
-    const versionRecord = await getDB().collection('itemRecord').findMany({
-      where: {
-        version: templateVersion,
-      },
-    });
+    const versionRecord = await getDB()
+      .collection('itemRecord')
+      .findMany({
+        where: {
+          version: templateVersion,
+        },
+      });
     if (versionRecord?.length) {
       return throwHttpException('数据库里已经存在该版本了，请修改后重新提交');
     }
@@ -294,11 +300,13 @@ export const isTemplateVersionHasExisted = async (
   const itemNode: any = result[0];
   console.log('upsertTemplate itemNode', itemNode);
   if (itemNode) {
-    const versionRecord = await getDB().collection('itemRecord').findMany({
-      where: {
-        version: templateVersion,
-      },
-    });
+    const versionRecord = await getDB()
+      .collection('itemRecord')
+      .findMany({
+        where: {
+          version: templateVersion,
+        },
+      });
     if (versionRecord?.length) {
       return {
         isCanAddTemplate: false,
@@ -317,28 +325,30 @@ export const isTemplateVersionHasExisted = async (
 
 export const remove = async (iNodeId: string) => {
   console.log('remove', iNodeId);
-  const deleteChildren = getDB().collection('indexNode').deleteMany({
-    where: {
-      parentId: iNodeId,
-    },
-  });
-  const deleteAcl = getDB().collection('acl').deleteMany({
-    where: {
-      indexNodeId: iNodeId,
-    },
-  });
-  const deleteCurrent = getDB().collection('indexNode').delete({
-    where: { id: iNodeId },
-  });
+  const deleteChildren = getDB()
+    .collection('indexNode')
+    .deleteMany({
+      where: {
+        parentId: iNodeId,
+      },
+    });
+  const deleteAcl = getDB()
+    .collection('acl')
+    .deleteMany({
+      where: {
+        indexNodeId: iNodeId,
+      },
+    });
+  const deleteCurrent = getDB()
+    .collection('indexNode')
+    .delete({
+      where: { id: iNodeId },
+    });
 
   const session = getClient().startSession();
   session.startTransaction();
   try {
-    await Promise.all([
-      deleteChildren,
-      deleteAcl,
-      deleteCurrent,
-    ]);
+    await Promise.all([deleteChildren, deleteAcl, deleteCurrent]);
     await session.commitTransaction();
   } catch (error) {
     await session.abortTransaction();
@@ -349,39 +359,45 @@ export const remove = async (iNodeId: string) => {
 };
 
 export const findUnique = async (id: string) => {
-  return getDB().collection('indexNode').findUnique({
-    where: { id },
-    include: {
-      item: {
-        include: {
-          records: {
-            take: 10,
-            orderBy: {
-              createdAt: 'desc',
+  return getDB()
+    .collection('indexNode')
+    .findUnique({
+      where: { id },
+      include: {
+        item: {
+          include: {
+            records: {
+              take: 10,
+              orderBy: {
+                createdAt: 'desc',
+              },
             },
           },
         },
       },
-    },
-  });
+    });
 };
 
 export const findTemplateNodeByTemplateName = async (templateName?: string) => {
   console.log('findTemplateNodeByTemplateName', templateName);
-  return getDB().collection('item').findRaw({
-    filter: {
-      'typeData.name': templateName,
-    },
-  });
+  return getDB()
+    .collection('item')
+    .findRaw({
+      filter: {
+        'typeData.name': templateName,
+      },
+    });
 };
 
 export const getParentNodeList = async (id: string) => {
-  const node = await getDB().collection('indexNode').findUnique({
-    where: { id: id },
-    include: {
-      item: {},
-    },
-  });
+  const node = await getDB()
+    .collection('indexNode')
+    .findUnique({
+      where: { id: id },
+      include: {
+        item: {},
+      },
+    });
   if (!node) {
     return [];
   } else if (node && !node.parentId) {
@@ -399,22 +415,26 @@ export const getSharedNodeAccessControlForUser = async (
   iNodeId: string,
   userId: string,
 ) => {
-  const acl = await getDB().collection('acl').findUnique({
-    where: {
-      indexNodeId_userId: {
-        indexNodeId: iNodeId,
-        userId: userId,
+  const acl = await getDB()
+    .collection('acl')
+    .findUnique({
+      where: {
+        indexNodeId_userId: {
+          indexNodeId: iNodeId,
+          userId: userId,
+        },
       },
-    },
-  });
+    });
   if (acl) {
     return acl;
   } else {
-    const node = await getDB().collection('indexNode').findUnique({
-      where: {
-        id: iNodeId,
-      },
-    });
+    const node = await getDB()
+      .collection('indexNode')
+      .findUnique({
+        where: {
+          id: iNodeId,
+        },
+      });
     if (node.parentId) {
       return getSharedNodeAccessControlForUser(node.parentId, userId);
     } else {
@@ -427,14 +447,16 @@ export const checkUserHasAccessToNode = async (
   iNodeId: string,
   userId: string,
 ) => {
-  const node = await getDB().collection('indexNode').findUnique({
-    where: {
-      id: iNodeId,
-    },
-    include: {
-      item: true,
-    },
-  });
+  const node = await getDB()
+    .collection('indexNode')
+    .findUnique({
+      where: {
+        id: iNodeId,
+      },
+      include: {
+        item: true,
+      },
+    });
   if (!node) {
     return false;
   }

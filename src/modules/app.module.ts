@@ -35,4 +35,4 @@ import { dotenvFiles } from '../script/dotenv';
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

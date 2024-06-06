@@ -12,28 +12,30 @@ export async function checkUserNameExists(name = '') {
 
 export function findUserByUserName(name = '') {
   return getDB().collection('user').findOne({
-    name: name
+    name: name,
   });
 }
 
 export const create = async (createUserDto: CreateUserDto) => {
   const { name = '', password = '' } = createUserDto;
-  return getDB().collection('user').create({
-    data: {
-      name,
-      password,
-      userProfile: {
-        create: {},
-      },
-    },
-    select: {
-      userProfile: {
-        select: {
-          userId: true,
+  return getDB()
+    .collection('user')
+    .create({
+      data: {
+        name,
+        password,
+        userProfile: {
+          create: {},
         },
       },
-    },
-  });
+      select: {
+        userProfile: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
 };
 
 export const findMany = () => {
@@ -41,79 +43,91 @@ export const findMany = () => {
 };
 
 export const findUnique = (userId: string) => {
-  return getDB().collection('userProfile').findUnique({
-    where: { userId: userId },
-    select: {
-      userId: true,
-      zhiYinLouInfo: true,
-    },
-  });
+  return getDB()
+    .collection('userProfile')
+    .findUnique({
+      where: { userId: userId },
+      select: {
+        userId: true,
+        xdfStaffInfo: true,
+      },
+    });
 };
 
 export const update = (id: string, updateUserDto: UpdateUserDto) => {
   // const { name } = updateUserDto;
   const { email = '', nickname = '' } = updateUserDto;
-  return getDB().collection('userProfile').update({
-    where: { id: id },
-    data: {
-      email,
-      nickname,
-    },
-  });
+  return getDB()
+    .collection('userProfile')
+    .update({
+      where: { id: id },
+      data: {
+        email,
+        nickname,
+      },
+    });
 };
 
 export const remove = (id: string) => {
-  return getDB().collection('user').delete({
-    where: { id: id },
-  });
+  return getDB()
+    .collection('user')
+    .delete({
+      where: { id: id },
+    });
 };
 
 // 知音楼登录：绑定知音楼账号
-export function createUserWithZhiYinLou(zhiyinlouUser: any) {
-  return getDB().collection('user').create({
-    data: {
-      userProfile: {
-        create: {
-          zhiYinLouInfo: {
-            create: {
-              ...zhiyinlouUser,
+export function createUserWithXDFStaff(xdfStaffUser: any) {
+  return getDB()
+    .collection('user')
+    .create({
+      data: {
+        userProfile: {
+          create: {
+            xdfStaffInfo: {
+              create: {
+                ...xdfStaffUser,
+              },
             },
           },
         },
       },
-    },
-    select: {
-      userProfile: {
-        select: {
-          userId: true,
-          zhiYinLouInfo: true,
+      select: {
+        userProfile: {
+          select: {
+            userId: true,
+            xdfStaffInfo: true,
+          },
         },
       },
-    },
-  });
+    });
 }
 
-export function findUserByZhiYinLou({ workcode }) {
-  return getDB().collection('userProfile').findFirst({
-    where: {
-      zhiYinLouInfo: {
-        workcode,
+export function findUserByXDFStaff({ workcode }) {
+  return getDB()
+    .collection('userProfile')
+    .findFirst({
+      where: {
+        xdfStaffInfo: {
+          workcode,
+        },
       },
-    },
-    select: {
-      userId: true,
-      zhiYinLouInfo: true,
-    },
-  });
+      select: {
+        userId: true,
+        xdfStaffInfo: true,
+      },
+    });
 }
 
-export function updateUserZhiYinLouInfo(zhiyinlouUser: any = {}) {
-  return getDB().collection('zhiYinLouInfo').update({
-    where: {
-      workcode: zhiyinlouUser.workcode,
-    },
-    data: {
-      ...zhiyinlouUser,
-    },
-  });
+export function updateUserXDFStaffInfo(xdfStaffUser: any = {}) {
+  return getDB()
+    .collection('xdfStaffInfo')
+    .update({
+      where: {
+        workcode: xdfStaffUser.workcode,
+      },
+      data: {
+        ...xdfStaffUser,
+      },
+    });
 }

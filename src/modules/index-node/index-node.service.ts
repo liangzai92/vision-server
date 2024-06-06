@@ -10,9 +10,7 @@ import { getDB } from '@/shared/mongo';
 
 @Injectable()
 export class IndexNodeService {
-  constructor(
-    private readonly userService: UserService,
-  ) { }
+  constructor(private readonly userService: UserService) {}
 
   async createDirectory(ownerId, createINodeDto) {
     return indexNodeRepository.createDirectory(ownerId, createINodeDto);
@@ -124,20 +122,22 @@ export class IndexNodeService {
       where: condition,
     });
     const totalPages = Math.ceil(totalCount / pageSize);
-    const data = await getDB().collection('indexNode').findMany({
-      where: condition,
-      orderBy: {
-        updatedAt: 'desc',
-      },
-      include: {
-        item: true,
-        _count: {
-          select: { acls: true },
+    const data = await getDB()
+      .collection('indexNode')
+      .findMany({
+        where: condition,
+        orderBy: {
+          updatedAt: 'desc',
         },
-      },
-      skip,
-      take,
-    });
+        include: {
+          item: true,
+          _count: {
+            select: { acls: true },
+          },
+        },
+        skip,
+        take,
+      });
 
     const hasMore = page < totalPages;
     return {
@@ -171,11 +171,11 @@ export class IndexNodeService {
     }
     let toUser: any = null;
     if (workcode) {
-      toUser = await this.userService.findUserByZhiYinLou({
+      toUser = await this.userService.findUserByXDFStaff({
         workcode,
       });
       if (!toUser) {
-        const result: any = await this.userService.createUserWithZhiYinLou({
+        const result: any = await this.userService.createUserWithXDFStaff({
           workcode,
         });
         console.log('新添加一个知音楼用户', result);
@@ -190,16 +190,18 @@ export class IndexNodeService {
       return throwHttpException('您是项目的主人，无需再分享给自己');
     }
     const permissions = 'rwx';
-    return getDB().collection('acl').upsert({
-      where: {
-        indexNodeId_userId: {
-          indexNodeId: iNodeId,
-          userId: toUser.userId,
+    return getDB()
+      .collection('acl')
+      .upsert({
+        where: {
+          indexNodeId_userId: {
+            indexNodeId: iNodeId,
+            userId: toUser.userId,
+          },
         },
-      },
-      create: { indexNodeId: iNodeId, userId: toUser.userId, permissions },
-      update: { permissions },
-    });
+        create: { indexNodeId: iNodeId, userId: toUser.userId, permissions },
+        update: { permissions },
+      });
   }
 
   async getUserNodesSharedByOtherUsers(userId, payload: any = {}) {
@@ -230,25 +232,27 @@ export class IndexNodeService {
       where: condition,
     });
     const totalPages = Math.ceil(totalCount / pageSize);
-    const data = await getDB().collection('acl').findMany({
-      where: condition,
-      include: {
-        indexNode: {
-          include: {
-            item: true,
-            acls: true,
-            _count: {
-              select: { acls: true },
+    const data = await getDB()
+      .collection('acl')
+      .findMany({
+        where: condition,
+        include: {
+          indexNode: {
+            include: {
+              item: true,
+              acls: true,
+              _count: {
+                select: { acls: true },
+              },
             },
           },
         },
-      },
-      skip,
-      take,
-      orderBy: {
-        updatedAt: 'desc',
-      },
-    });
+        skip,
+        take,
+        orderBy: {
+          updatedAt: 'desc',
+        },
+      });
 
     const list = data.map((item) => {
       return item.indexNode;
@@ -312,20 +316,22 @@ export class IndexNodeService {
       where: condition,
     });
     const totalPages = Math.ceil(totalCount / pageSize);
-    const data = await getDB().collection('indexNode').findMany({
-      where: condition,
-      orderBy: {
-        updatedAt: 'desc',
-      },
-      include: {
-        item: true,
-        _count: {
-          select: { acls: true },
+    const data = await getDB()
+      .collection('indexNode')
+      .findMany({
+        where: condition,
+        orderBy: {
+          updatedAt: 'desc',
         },
-      },
-      skip,
-      take,
-    });
+        include: {
+          item: true,
+          _count: {
+            select: { acls: true },
+          },
+        },
+        skip,
+        take,
+      });
 
     const hasMore = page < totalPages;
     return {
@@ -343,11 +349,13 @@ export class IndexNodeService {
     if (iNodeId) {
       return indexNodeRepository.checkUserHasAccessToNode(iNodeId, userId);
     } else if (itemId) {
-      const node = await getDB().collection('item').findUnique({
-        where: {
-          id: itemId,
-        },
-      });
+      const node = await getDB()
+        .collection('item')
+        .findUnique({
+          where: {
+            id: itemId,
+          },
+        });
       return indexNodeRepository.checkUserHasAccessToNode(
         node.indexNodeId,
         userId,

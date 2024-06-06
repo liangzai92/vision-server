@@ -1,5 +1,5 @@
 #!/bin/bash
-IMAGE_NAME=test-env-mirror-service-registry.cn-beijing.cr.aliyuncs.com/xiwang/fe-liangzai
+IMAGE_NAME=test-env-mirror-service-registry.cn-beijing.cr.aliyuncs.com/adebibi/fe-liangzai
 TAG=latest
 CONTAINER_NAME=liangzai-main-container
 if [ $(docker ps -q -f name=$CONTAINER_NAME) ]; then

@@ -68,13 +68,13 @@ export class UserService {
   }
 
   // 知音楼登录
-  async createUserWithZhiYinLou(zhiyinlouUser: any) {
-    return userRepository.createUserWithZhiYinLou(zhiyinlouUser);
+  async createUserWithXDFStaff(xdfStaffUser: any) {
+    return userRepository.createUserWithXDFStaff(xdfStaffUser);
   }
-  async findUserByZhiYinLou(zhiyinlouUser: any) {
-    return userRepository.findUserByZhiYinLou(zhiyinlouUser);
+  async findUserByXDFStaff(xdfStaffUser: any) {
+    return userRepository.findUserByXDFStaff(xdfStaffUser);
   }
-  async updateUserZhiYinLouInfo(zhiyinlouUser: any) {
-    return userRepository.updateUserZhiYinLouInfo(zhiyinlouUser);
+  async updateUserXDFStaffInfo(xdfStaffUser: any) {
+    return userRepository.updateUserXDFStaffInfo(xdfStaffUser);
   }
 }

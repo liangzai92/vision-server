@@ -11,8 +11,8 @@ export class AuthService {
   ) {}
 
   async authenticateUser(payload) {
-    const workcode = payload?.zhiYinLouInfo?.workcode;
-    const user: any = await this.userService.findUserByZhiYinLou({ workcode });
+    const workcode = payload?.xdfStaffInfo?.workcode;
+    const user: any = await this.userService.findUserByXDFStaff({ workcode });
     return user;
   }
 
@@ -27,20 +27,20 @@ export class AuthService {
     );
   }
 
-  async loginWithZhiYinLou(zhiyinlouUserData) {
-    const { workcode } = zhiyinlouUserData;
-    let user: any = await this.userService.findUserByZhiYinLou({ workcode });
-    console.log('findUserByZhiYinLou', user);
+  async loginWithXDFStaff(xdfStaffUserData) {
+    const { workcode } = xdfStaffUserData;
+    let user: any = await this.userService.findUserByXDFStaff({ workcode });
+    console.log('findUserByXDFStaff', user);
     if (!user) {
       const result: any =
-        await this.userService.createUserWithZhiYinLou(zhiyinlouUserData);
-      console.log('新的知音楼用户', result);
+        await this.userService.createUserWithXDFStaff(xdfStaffUserData);
+      console.log('新的 xdf staff 用户', result);
       user = result.userProfile;
     } else {
-      const zhiYinLouInfo =
-        await this.userService.updateUserZhiYinLouInfo(zhiyinlouUserData);
-      console.log('更新用户知音楼数据', zhiYinLouInfo);
-      user.zhiYinLouInfo = zhiYinLouInfo;
+      const xdfStaffInfo =
+        await this.userService.updateUserXDFStaffInfo(xdfStaffUserData);
+      console.log('更新用户 xdf staff 数据', xdfStaffInfo);
+      user.xdfStaffInfo = xdfStaffInfo;
     }
     const access_token = await this.jwtService.signAsync(user);
     return {

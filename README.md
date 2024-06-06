@@ -50,9 +50,9 @@ $ pnpm run start:prod
 ### 目前公司内前端服务器现状
 服务器上 nodejs 版本是 v14.19.0。这个需要非常注意。目前我分别在下面两台服务器发布了服务。
 - product-front-editor-platform【前端编辑器正式环境】。
-  - 域名：editor.xiwang.com
+  - 域名：editor.adebibi.com
 - product-front-editor-test-env【前端编辑器测试环境】。
-  - 域名：editor-test.xiwang.com
+  - 域名：editor-test.adebibi.com
 
 ### Docker 部署
 本来想就遵循目前已有nodejs 应用使用 pm2 部署的方式发布，但鉴于版本依赖（对 nodejs 版本的要求）的不同，我不得不上了docker，还没细化部署细节，有待优化的地方，比如 volume。
@@ -63,7 +63,7 @@ $ pnpm run start:prod
 - 主机部署：拉取镜像，运行容器。
 
 ### Nginx 配置
-nginx 配置路径，测试环境为例：`/etc/nginx/conf.d/editor-test.xiwang.com.conf`。
+nginx 配置路径，测试环境为例：`/etc/nginx/conf.d/editor-test.adebibi.com.conf`。
 
 代理所有已`/liangzai`开头的请求到本地的 `9528` 端口，具体配置如下：
 
@@ -85,7 +85,7 @@ location ~* ^/liangzai/(.*)$ {
   }
 }
 ```
->⚠️：既然nginx 是这样配置的，那对应前端请求的时候，需要注意别漏掉`/liangzai`前缀，接口访问注意是`https://editor-test.xiwang.com/liangzai`和`https://editor.xiwang.com/liangzai`。
+>⚠️：既然nginx 是这样配置的，那对应前端请求的时候，需要注意别漏掉`/liangzai`前缀，接口访问注意是`https://editor-test.adebibi.com/liangzai`和`https://editor.adebibi.com/liangzai`。
 
 ## Todo
 - 目前 ticket是参考彩虹猫暂时本地一个文件存储的，先凑活用，后面需要改成数据库和redis。

@@ -7,17 +7,15 @@ import {
   Get,
   Post,
   Req,
-  Res,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 import { AuthService } from './auth.service';
 
-import { getTicket, verify } from '@/utils/zhiyinlou';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Public } from './public.decorator';
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants';
-
+import { verifyAuthCode } from '@/shared/sso/xdf-staff';
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -46,27 +44,23 @@ export class AuthController {
   }
 
   @Public()
-  @Get('login/zhiyinlou')
-  async loginWithZhiYinLou(@Query() query, @Response() response) {
-    const { redirect_url, token } = query;
-
-    const ticket = await getTicket({
-      vdyooAppId: this.configService.get('NEST_VDYOO_APP_ID'),
-      vdyooAppKey: this.configService.get('NEST_VDYOO_APP_KEY'),
+  @Get('login/xdf/staff')
+  async loginWithXDFStaff(@Query() query, @Response() response) {
+    const { code, e2e, userAgent, ip } = query;
+    const { redirect_url } = query;
+    const [err, data] = await verifyAuthCode({
+      code,
+      e2e,
+      userAgent,
+      ip,
     });
-
-    const [err, data] = await verify({
-      ticket,
-      token,
-    });
+    console.log('verifyAuthCode----', [err, data]);
     if (err) {
       response.redirect(redirect_url);
       return;
     }
-    console.log('zhiyinlou verify data res', data);
     const userData = data.data;
-    console.log('userData', userData);
-    const result = await this.authService.loginWithZhiYinLou(userData);
+    const result = await this.authService.loginWithXDFStaff(userData);
     const access_token = result.access_token;
     console.log('access_token', access_token);
     response.cookie(ACCESS_TOKEN_COOKIE_NAME, access_token, {

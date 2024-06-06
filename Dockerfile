@@ -1,5 +1,5 @@
 FROM node:16.16.0
-LABEL maintainer = "郭梁 <w_guoliang@xiwang.com>"
+LABEL maintainer = "郭梁 <w_guoliang@adebibi.com>"
 
 RUN mkdir -p /app
 WORKDIR /app
