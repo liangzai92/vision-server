@@ -2,7 +2,6 @@ import './script/dotenv';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import * as cookieParser from 'cookie-parser';
-
 import { ErrorFilter } from './shared/filters/error.filter';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { TransformInterceptor } from './shared/interceptors/transform.interceptor';

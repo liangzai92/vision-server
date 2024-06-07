@@ -6,7 +6,7 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtAuthStrategy } from './auth.strategy';
 
-import { jwtConstants } from './constants';
+import { JWT_CONSTANTS } from './constants';
 
 import { UserService } from '@/modules/user/user.service';
 
@@ -15,7 +15,7 @@ import { UserService } from '@/modules/user/user.service';
     PassportModule,
     JwtModule.register({
       global: true,
-      secret: jwtConstants.secret,
+      secret: JWT_CONSTANTS.secret,
       signOptions: { expiresIn: '1d' },
     }),
   ],

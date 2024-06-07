@@ -1,6 +1,7 @@
+import { ObjectId } from 'mongodb';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { getDB } from '@/shared/mongo';
+import { getDB } from '@/helpers/mongo';
 
 export async function checkUserNameExists(name = '') {
   const user = await getDB().collection('user').findOne({
@@ -42,16 +43,16 @@ export const findMany = () => {
   return getDB().collection('user').findMany();
 };
 
-export const findUnique = (userId: string) => {
+export const findOne = (...args) => {
   return getDB()
-    .collection('userProfile')
-    .findUnique({
-      where: { userId: userId },
-      select: {
-        userId: true,
-        xdfStaffInfo: true,
-      },
-    });
+    .collection('user')
+    .findOne(...args);
+};
+
+export const findUserByUserId = (userId: string) => {
+  return getDB()
+    .collection('user')
+    .findOne({ userId: new ObjectId(userId) });
 };
 
 export const update = (id: string, updateUserDto: UpdateUserDto) => {
@@ -76,58 +77,30 @@ export const remove = (id: string) => {
     });
 };
 
-// 知音楼登录：绑定知音楼账号
-export function createUserWithXDFStaff(xdfStaffUser: any) {
+export function createUserWithXDFStaff(xdfStaffInfo: any) {
+  return getDB().collection('user').insertOne({
+    userId: new ObjectId(),
+    xdfStaffInfo: xdfStaffInfo,
+  });
+}
+
+export const findUserByXDFStaffInfo = (xdfStaffInfo) => {
+  return getDB().collection('user').findOne({
+    'xdfStaffInfo.email': xdfStaffInfo.email,
+  });
+};
+
+export function updateUserXDFStaffInfo(userId, xdfStaffInfo: any = {}) {
   return getDB()
     .collection('user')
-    .create({
-      data: {
-        userProfile: {
-          create: {
-            xdfStaffInfo: {
-              create: {
-                ...xdfStaffUser,
-              },
-            },
-          },
+    .updateOne(
+      {
+        userId: userId,
+      },
+      {
+        $set: {
+          xdfStaffInfo: xdfStaffInfo,
         },
       },
-      select: {
-        userProfile: {
-          select: {
-            userId: true,
-            xdfStaffInfo: true,
-          },
-        },
-      },
-    });
-}
-
-export function findUserByXDFStaff({ workcode }) {
-  return getDB()
-    .collection('userProfile')
-    .findFirst({
-      where: {
-        xdfStaffInfo: {
-          workcode,
-        },
-      },
-      select: {
-        userId: true,
-        xdfStaffInfo: true,
-      },
-    });
-}
-
-export function updateUserXDFStaffInfo(xdfStaffUser: any = {}) {
-  return getDB()
-    .collection('xdfStaffInfo')
-    .update({
-      where: {
-        workcode: xdfStaffUser.workcode,
-      },
-      data: {
-        ...xdfStaffUser,
-      },
-    });
+    );
 }

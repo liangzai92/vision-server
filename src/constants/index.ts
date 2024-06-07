@@ -10,4 +10,4 @@ export enum ItemTypes {
   PROJECT_CREATED_FROM_TEMPLATE = 'projectCreatedFromTemplate',
 }
 
-export const ACCESS_TOKEN_COOKIE_NAME = 'fe_content_os_access_token';
+export const ACCESS_TOKEN_COOKIE_NAME = 'fe_vision_access_token';

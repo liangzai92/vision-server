@@ -11,8 +11,8 @@ export class AuthService {
   ) {}
 
   async authenticateUser(payload) {
-    const workcode = payload?.xdfStaffInfo?.workcode;
-    const user: any = await this.userService.findUserByXDFStaff({ workcode });
+    const { userId } = payload;
+    const user: any = await this.userService.findUserByUserId(userId);
     return user;
   }
 
@@ -28,21 +28,24 @@ export class AuthService {
   }
 
   async loginWithXDFStaff(xdfStaffUserData) {
-    const { workcode } = xdfStaffUserData;
-    let user: any = await this.userService.findUserByXDFStaff({ workcode });
-    console.log('findUserByXDFStaff', user);
+    const { email } = xdfStaffUserData;
+    let user: any = await this.userService.findUserByXDFStaffInfo({ email });
+    console.log('findUserByXDFStaffInfo', user);
     if (!user) {
       const result: any =
         await this.userService.createUserWithXDFStaff(xdfStaffUserData);
       console.log('新的 xdf staff 用户', result);
       user = result.userProfile;
     } else {
-      const xdfStaffInfo =
-        await this.userService.updateUserXDFStaffInfo(xdfStaffUserData);
-      console.log('更新用户 xdf staff 数据', xdfStaffInfo);
-      user.xdfStaffInfo = xdfStaffInfo;
+      user = await this.userService.updateUserXDFStaffInfo(
+        user.userId,
+        xdfStaffUserData,
+      );
+      console.log('更新用户数据', user);
     }
-    const access_token = await this.jwtService.signAsync(user);
+    const access_token = await this.jwtService.signAsync({
+      userId: user.userId,
+    });
     return {
       access_token,
     };

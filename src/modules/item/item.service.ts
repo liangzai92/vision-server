@@ -4,13 +4,11 @@ import { publishResources } from 'src/utils/publish';
 import { IndexNodeService } from '../index-node/index-node.service';
 import * as indexNodeRepository from '../index-node/index-node.repository';
 import { throwHttpException } from '@/utils/throwHttpException';
-import { getDB } from '@/shared/mongo';
+import { getDB } from '@/helpers/mongo';
 
 @Injectable()
 export class ItemService {
-  constructor(
-    private readonly indexNodeService: IndexNodeService,
-  ) { }
+  constructor(private readonly indexNodeService: IndexNodeService) {}
 
   async createProject(ownerId, createProjectDto: any, recordData?: any) {
     return indexNodeRepository.createProject(
@@ -97,23 +95,27 @@ export class ItemService {
   }
 
   async findUnique(itemId: string) {
-    return getDB().collection('item').findUnique({
-      where: { id: itemId },
-      include: {
-        records: {
-          take: 1,
-          orderBy: {
-            createdAt: 'desc',
+    return getDB()
+      .collection('item')
+      .findUnique({
+        where: { id: itemId },
+        include: {
+          records: {
+            take: 1,
+            orderBy: {
+              createdAt: 'desc',
+            },
           },
         },
-      },
-    });
+      });
   }
 
   async remove(itemId: string) {
-    const res = await getDB().collection('item').delete({
-      where: { id: itemId },
-    });
+    const res = await getDB()
+      .collection('item')
+      .delete({
+        where: { id: itemId },
+      });
     return res;
   }
 
@@ -121,30 +123,32 @@ export class ItemService {
     const nextVersion = new Date().getTime() + '';
     const cover = updateProjectDto?.screenshot;
     const published = updateProjectDto?.published;
-    return getDB().collection('item').update({
-      where: { id: itemId },
-      data: {
-        published,
-        version: nextVersion,
-        cover,
-        records: {
-          create: [
-            {
-              version: nextVersion,
-              data: updateProjectDto,
-            },
-          ],
-        },
-      },
-      include: {
-        records: {
-          take: 1,
-          orderBy: {
-            createdAt: 'desc',
+    return getDB()
+      .collection('item')
+      .update({
+        where: { id: itemId },
+        data: {
+          published,
+          version: nextVersion,
+          cover,
+          records: {
+            create: [
+              {
+                version: nextVersion,
+                data: updateProjectDto,
+              },
+            ],
           },
         },
-      },
-    });
+        include: {
+          records: {
+            take: 1,
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
+        },
+      });
   }
 
   async publish(userId, itemId: string, updateProjectDto: any) {

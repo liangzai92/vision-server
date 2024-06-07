@@ -1,6 +1,6 @@
 import { MongoClient } from 'mongodb';
 
-const MONGO_CONNECTION_STRING = process.env.MONGO_CONNECTION_STRING
+const MONGO_CONNECTION_STRING = process.env.MONGO_CONNECTION_STRING;
 
 export const getMongoConfig = () => {
   return {

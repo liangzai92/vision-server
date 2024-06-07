@@ -16,7 +16,6 @@ export class ErrorFilter implements ExceptionFilter {
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal Server Error';
-    let error = {};
     console.log('exception', exception);
 
     if (exception instanceof HttpException) {
@@ -28,13 +27,12 @@ export class ErrorFilter implements ExceptionFilter {
       // For example, if you have custom application-specific errors, you can handle them separately
       // and return appropriate status codes and error messages
       status = HttpStatus.BAD_REQUEST;
-      message = 'An error occurred';
+      message = 'BAD_REQUEST';
     }
 
     response.status(status).json({
-      statusCode: status,
+      code: status,
       message,
-      error,
       timestamp: new Date().toISOString(),
       path: request.url,
     });

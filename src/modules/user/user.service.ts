@@ -32,10 +32,9 @@ export class UserService {
     };
   }
 
-  async findUnique(id: string) {
-    const res = await userRepository.findUnique(id);
+  async findUserByUserId(id: string) {
+    const res = await userRepository.findUserByUserId(id);
     if (!res) throwHttpException('用户id不存在');
-
     return res;
   }
 
@@ -63,18 +62,27 @@ export class UserService {
     if (!user) throwHttpException('Invalid username or password');
     const passwordMatch = await verifyPassword(password, user.password);
     if (!passwordMatch) throwHttpException('Invalid username or password');
-    const userInfo = await userRepository.findUnique(user.id);
+    const userInfo = await userRepository.findUserByUserId(user.userId);
     return userInfo;
   }
 
   // 知音楼登录
-  async createUserWithXDFStaff(xdfStaffUser: any) {
-    return userRepository.createUserWithXDFStaff(xdfStaffUser);
+  async createUserWithXDFStaff(xdfStaff: any) {
+    const result = await userRepository.createUserWithXDFStaff(xdfStaff);
+    return userRepository.findOne({
+      _id: result.insertedId,
+    });
   }
-  async findUserByXDFStaff(xdfStaffUser: any) {
-    return userRepository.findUserByXDFStaff(xdfStaffUser);
+
+  async findUserByXDFStaffInfo(xdfStaff: any) {
+    return userRepository.findUserByXDFStaffInfo(xdfStaff);
   }
-  async updateUserXDFStaffInfo(xdfStaffUser: any) {
-    return userRepository.updateUserXDFStaffInfo(xdfStaffUser);
+
+  async updateUserXDFStaffInfo(userId, xdfStaff: any) {
+    const result = await userRepository.updateUserXDFStaffInfo(
+      userId,
+      xdfStaff,
+    );
+    return userRepository.findUserByUserId(userId);
   }
 }

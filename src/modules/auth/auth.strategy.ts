@@ -1,9 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
-
 import { AuthService } from './auth.service';
-import { jwtConstants } from './constants';
+import { JWT_CONSTANTS } from './constants';
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants';
 
 @Injectable()
@@ -19,12 +18,13 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
           return authAccessToken;
         },
       ]),
-      secretOrKey: jwtConstants.secret,
+      secretOrKey: JWT_CONSTANTS.secret,
       ignoreExpiration: false,
     });
   }
 
   async validate(payload: any) {
+    console.log('---jwt验证通过～payload', payload);
     return this.authService.authenticateUser(payload);
   }
 }

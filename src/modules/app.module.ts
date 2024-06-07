@@ -8,7 +8,7 @@ import { IndexNodeModule } from './index-node/index-node.module';
 import { ItemModule } from './item/item.module';
 
 import { AuthModule } from './auth/auth.module';
-import { JwtAuthGuard } from './auth/auth.grard';
+import { JwtAuthGuard } from './auth/auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 
 import { ConfigModule } from '@nestjs/config';

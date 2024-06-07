@@ -1,5 +1,5 @@
 import { ItemTypes } from '@/constants';
-import { getClient, getDB } from '@/shared/mongo';
+import { getClient, getDB } from '@/helpers/mongo';
 import { throwHttpException } from '@/utils/throwHttpException';
 import { isEmpty } from 'lodash';
 

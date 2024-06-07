@@ -1,8 +1,9 @@
-import md5 from 'md5';
-import qs from 'qs';
+import * as md5 from 'md5';
+import * as qs from 'qs';
 import axios from 'axios';
-import dayjs from 'dayjs';
+import * as dayjs from 'dayjs';
 import { v4 as uuidv4 } from 'uuid';
+import { tryCatchWrapper } from '@/utils/tryCatchWrapper';
 
 const getXDFStaffSSOConfig = () => {
   return {
@@ -14,11 +15,12 @@ const XDF_STAFF_SSO_CONFIG = getXDFStaffSSOConfig();
 
 export const getLoginUrl = () => {
   const baseUrl = 'https://teste2api.test.xdf.cn/e2/qr';
+  const returnUrl =
+    'https://xone-txgw1.test.xdf.cn/daxue-node-mofang-server-5435/auth/xdf/staff/login';
   const mergedSearchParams = {
     x3id: XDF_STAFF_SSO_CONFIG.APP_ID,
     state: uuidv4(),
-    returnUrl:
-      'https://xone-txgw1.test.xdf.cn/daxue-node-mofang-server-5435/api/auth/xdf/staff/login',
+    returnUrl: returnUrl, // 只有域名是固定的，修改需要联系集团的人。
   };
   const queryString = qs.stringify(mergedSearchParams);
   const url = `${baseUrl}?${queryString}`;
@@ -54,21 +56,21 @@ export const verifyAuthCode = async ({ code, e2e, userAgent, ip }) => {
     x3id: XDF_STAFF_SSO_CONFIG.APP_ID,
     time: dayjs().format('YYYY-MM-DDTHH:mm:ss'),
   };
-  payload.sign = getSign({
-    ...payload,
-  });
-  const res = await axios({
-    method: 'POST',
-    url: url,
-    headers: {
-      'content-type': 'application/x-www-form-urlencoded',
+  payload.sign = getSign(payload);
+  const [err, res] = await tryCatchWrapper(axios.post)(
+    url,
+    qs.stringify(payload),
+    {
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+      },
     },
-    data: qs.stringify(payload),
-  });
+  );
+  console.log('verifyAuthCode request', [err, res]);
 
   // 1：成功 其它值：失败，msg 为报错提示
   if (res?.data?.status !== 1) {
-    return [res, null];
+    return [res, res];
   }
 
   const data = res.data?.data;

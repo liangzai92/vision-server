@@ -6,7 +6,7 @@ import { throwHttpException } from 'src/utils/throwHttpException';
 import { convertToNumber } from '@/utils';
 import { UserService } from '../user/user.service';
 import { ItemTypes } from '@/constants';
-import { getDB } from '@/shared/mongo';
+import { getDB } from '@/helpers/mongo';
 
 @Injectable()
 export class IndexNodeService {
@@ -171,7 +171,7 @@ export class IndexNodeService {
     }
     let toUser: any = null;
     if (workcode) {
-      toUser = await this.userService.findUserByXDFStaff({
+      toUser = await this.userService.findUserByXDFStaffInfo({
         workcode,
       });
       if (!toUser) {

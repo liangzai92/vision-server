@@ -28,7 +28,7 @@ export class UserController {
 
   @Get(':id')
   findUnique(@Param('id') id: string) {
-    return this.userService.findUnique(id);
+    return this.userService.findUserByUserId(id);
   }
 
   @Patch(':id')

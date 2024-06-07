@@ -1,6 +1,6 @@
+import { Request } from 'express';
 import {
   Controller,
-  Request,
   Body,
   Query,
   Response,
@@ -15,7 +15,8 @@ import { AuthService } from './auth.service';
 import { CreateUserDto } from '../user/dto/create-user.dto';
 import { Public } from './public.decorator';
 import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants';
-import { verifyAuthCode } from '@/shared/sso/xdf-staff';
+import { verifyAuthCode } from '@/helpers/xdf-staff-sso';
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -38,29 +39,32 @@ export class AuthController {
 
   @Get('check/login')
   checkLogin(@Req() request: Request) {
-    // console.log(request.cookies); // or "request.cookies['cookieKey']"
-    // or console.log(request.signedCookies);
     // return this.userService.checkLogin(id);
   }
 
   @Public()
-  @Get('login/xdf/staff')
-  async loginWithXDFStaff(@Query() query, @Response() response) {
-    const { code, e2e, userAgent, ip } = query;
-    const { redirect_url } = query;
-    const [err, data] = await verifyAuthCode({
+  @Get('/xdf/staff/login')
+  async loginWithXDFStaff(
+    @Req() request: Request,
+    @Response() response,
+    @Query() query,
+  ) {
+    const { code, e2e } = query;
+    const userAgent = request.headers['user-agent'];
+    const ip = request.ip || '0.0.0.0';
+    const [err, xdfStaffInfo] = await verifyAuthCode({
       code,
       e2e,
       userAgent,
       ip,
     });
-    console.log('verifyAuthCode----', [err, data]);
+    console.log('verifyAuthCode controller', [err, xdfStaffInfo]);
+    const defaultRedirectUrl = 'http://localhost:8000/vision-admin';
+    const redirect_url = query.redirect_url || defaultRedirectUrl;
     if (err) {
-      response.redirect(redirect_url);
-      return;
+      return response.redirect(redirect_url);
     }
-    const userData = data.data;
-    const result = await this.authService.loginWithXDFStaff(userData);
+    const result = await this.authService.loginWithXDFStaff(xdfStaffInfo);
     const access_token = result.access_token;
     console.log('access_token', access_token);
     response.cookie(ACCESS_TOKEN_COOKIE_NAME, access_token, {
