@@ -6,6 +6,7 @@ import { ErrorFilter } from './shared/filters/error.filter';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
 // import { RequestInterceptor } from './shared/interceptors/request.interceptor';
+import './test'; // just for test
 
 import { AppModule } from './modules/app.module';
 

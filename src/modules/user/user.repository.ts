@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { getDB } from '@/helpers/mongo';
+import { convertToObjectId, findWithPagination, getDB } from '@/helpers/mongo';
 
 export async function checkUserNameExists(name = '') {
   const user = await getDB().collection('user').findOne({
@@ -52,7 +52,7 @@ export const findOne = (...args) => {
 export const findUserByUserId = (userId: string) => {
   return getDB()
     .collection('user')
-    .findOne({ userId: new ObjectId(userId) });
+    .findOne({ userId: convertToObjectId(userId) });
 };
 
 export const update = (id: string, updateUserDto: UpdateUserDto) => {
@@ -77,20 +77,20 @@ export const remove = (id: string) => {
     });
 };
 
-export function createUserWithXDFStaff(xdfStaffInfo: any) {
+export function createUserWithXDFStaff(xdfStaff: any) {
   return getDB().collection('user').insertOne({
     userId: new ObjectId(),
-    xdfStaffInfo: xdfStaffInfo,
+    xdfStaff: xdfStaff,
   });
 }
 
-export const findUserByXDFStaffInfo = (xdfStaffInfo) => {
+export const findUserByXDFStaff = ({ email }: any) => {
   return getDB().collection('user').findOne({
-    'xdfStaffInfo.email': xdfStaffInfo.email,
+    'xdfStaff.email': email,
   });
 };
 
-export function updateUserXDFStaffInfo(userId, xdfStaffInfo: any = {}) {
+export function updateUserXDFStaffInfoByUserId(userId, xdfStaff: any = {}) {
   return getDB()
     .collection('user')
     .updateOne(
@@ -99,8 +99,25 @@ export function updateUserXDFStaffInfo(userId, xdfStaffInfo: any = {}) {
       },
       {
         $set: {
-          xdfStaffInfo: xdfStaffInfo,
+          xdfStaff: xdfStaff,
         },
       },
     );
 }
+
+export const getUserList = ({ name }) => {
+  function createRegexQuery(field, value) {
+    return {
+      [field]: {
+        $regex: '.*' + value + '.*',
+        $options: 'i',
+      },
+    };
+  }
+  return findWithPagination(getDB().collection('user'), {
+    $or: [
+      createRegexQuery('xdfStaff.email', name),
+      createRegexQuery('xdfStaff.realName', name),
+    ],
+  });
+};

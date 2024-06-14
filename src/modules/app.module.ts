@@ -4,7 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 import { UserModule } from './user/user.module';
-import { IndexNodeModule } from './index-node/index-node.module';
+import { INodeModule } from './i-node/i-node.module';
 import { ItemModule } from './item/item.module';
 
 import { AuthModule } from './auth/auth.module';
@@ -23,7 +23,7 @@ import { dotenvFiles } from '../script/dotenv';
     }),
     UserModule,
     AuthModule,
-    IndexNodeModule,
+    INodeModule,
     ItemModule,
   ],
   controllers: [AppController],

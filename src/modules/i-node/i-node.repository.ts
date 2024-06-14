@@ -1,127 +1,61 @@
 import { ItemTypes } from '@/constants';
-import { getClient, getDB } from '@/helpers/mongo';
 import { throwHttpException } from '@/utils/throwHttpException';
+import { getClient, getDB, convertToObjectId } from '@/helpers/mongo/index';
 import { isEmpty } from 'lodash';
+
+export const findOne = (...args) => {
+  return getDB()
+    .collection('iNode')
+    .findOne(...args);
+};
+
+export const findOneById = (id) => {
+  return getDB()
+    .collection('iNode')
+    .findOne({
+      _id: convertToObjectId(id),
+    });
+};
 
 export const createDirectory = async (ownerId, createINodeDto: any = {}) => {
   const parentId = createINodeDto.parentId;
-
   const name = createINodeDto.name;
   const description = createINodeDto.description;
 
-  const indexNode = await getDB()
-    .collection('indexNode')
-    .create({
-      data: {
-        type: 'd',
-        ownerId: ownerId,
-        parentId: parentId,
-        item: {
-          create: {
-            name,
-            description,
-          },
-        },
-      },
-    });
+  const doc: any = {
+    type: 'd',
+    ownerId: convertToObjectId(ownerId),
+    item: {
+      name: name,
+      description: description,
+    },
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+  if (parentId) {
+    doc.parentId = convertToObjectId(parentId);
+  }
 
-  return indexNode;
+  return getDB().collection('iNode').insertOne(doc);
 };
 
-export const updateDirectory = async (
-  iNodeId,
-  updateDirectoryDto: any = {},
-) => {
+export const updateDirectory = (iNodeId, updateDirectoryDto: any = {}) => {
   const name = updateDirectoryDto.name;
   const description = updateDirectoryDto.description;
-
-  console.log('dfdfdf');
-  const indexNode = await getDB()
-    .collection('indexNode')
-    .update({
-      where: {
-        id: iNodeId,
+  return getDB()
+    .collection('iNode')
+    .updateOne(
+      {
+        _id: convertToObjectId(iNodeId),
       },
-      data: {
-        item: {
-          update: {
-            name,
-            description,
-          },
+      {
+        $set: {
+          'item.name': name,
+          'item.description': description,
+          updatedAt: new Date(),
         },
       },
-    });
-
-  return indexNode;
-};
-
-export const createItem = async (
-  iNodeDto: any = {},
-  itemDto: any = {},
-  recordData?: any,
-) => {
-  console.log('createItem iNodeDto', iNodeDto);
-  console.log('createItem itemDto', itemDto);
-  const ownerId = iNodeDto.ownerId;
-  const parentId = iNodeDto.parentId;
-  const iNode = {
-    type: '-',
-    ownerId,
-    parentId,
-  };
-
-  const name = itemDto.name;
-  const description = itemDto.description;
-  const templateId = itemDto.templateId;
-  const type = itemDto.type;
-  const typeData = itemDto.typeData;
-  const item: any = {
-    name,
-    description,
-    templateId,
-    type,
-    typeData,
-  };
-
-  const options: any = {
-    data: {
-      ...iNode,
-      item: {
-        create: {
-          ...item,
-        },
-      },
-    },
-    include: {
-      item: {
-        include: {
-          records: true,
-        },
-      },
-    },
-  };
-
-  if (!isEmpty(recordData)) {
-    options.data.item.create.records = {
-      create: [
-        {
-          data: recordData,
-        },
-      ],
-    };
-  }
-  if (item.type === ItemTypes.TEMPLATE) {
-    options.data.item.create.records = {
-      create: [
-        {
-          version: typeData.version,
-          data: typeData,
-        },
-      ],
-    };
-  }
-
-  return getDB().collection('indexNode').create(options);
+    );
 };
 
 export const updateItem = async (
@@ -129,8 +63,6 @@ export const updateItem = async (
   itemDto: any = {},
   recordData?: any,
 ) => {
-  console.log('updateItem iNodeDto', iNodeDto);
-  console.log('updateItem itemDto', itemDto);
   const ownerId = iNodeDto.ownerId;
   const parentId = iNodeDto.parentId;
   const iNode = {
@@ -154,7 +86,7 @@ export const updateItem = async (
 
   const options: any = {
     where: {
-      id: itemDto.indexNodeId,
+      id: itemDto.iNodeId,
     },
     data: {
       ...iNode,
@@ -193,45 +125,62 @@ export const updateItem = async (
     };
   }
 
-  return getDB().collection('indexNode').update(options);
+  return getDB().collection('iNode').update(options);
 };
 
-export const createProject = async (
-  ownerId,
-  createProjectDto: any = {},
-  recordData?: any,
-) => {
-  const parentId = createProjectDto.parentId;
-  return createItem(
-    {
-      ownerId,
-      parentId,
+export const createItem = async (itemDto: any = {}, ownerId) => {
+  const parentId = itemDto.parentId;
+  const doc: any = {
+    type: '-',
+    item: {
+      ...itemDto,
+      type: ItemTypes.PROJECT,
     },
-    { ...createProjectDto, type: ItemTypes.PROJECT },
-    recordData,
-  );
+    records: [],
+    createdAt: new Date(),
+  };
+  doc.ownerId = convertToObjectId(ownerId);
+  if (parentId) {
+    doc.parentId = convertToObjectId(parentId);
+  }
+  console.log('createItem', doc);
+  return getDB().collection('iNode').insertOne(doc);
 };
 
-export const updateProject = async (iNodeId, createProjectDto: any = {}) => {
-  const name = createProjectDto.name;
-  const description = createProjectDto.description;
-  return updateItem({}, { name, description, indexNodeId: iNodeId });
+export const updateItemInfo = (iNodeId, createProjectDto: any = {}) => {
+  return getDB()
+    .collection('iNode')
+    .updateOne(
+      {
+        _id: convertToObjectId(iNodeId),
+      },
+      {
+        $set: {
+          'item.name': createProjectDto.name,
+          'item.description': createProjectDto.description,
+          updatedAt: new Date(),
+        },
+      },
+    );
 };
 
 export const createProjectFromTemplate = async (
   ownerId,
   createProjectDto: any = {},
-  recordData?: any,
 ) => {
   const parentId = createProjectDto.parentId;
-  return createItem(
-    {
+  return getDB()
+    .collection('iNode')
+    .insertOne({
       ownerId,
       parentId,
-    },
-    { ...createProjectDto, type: ItemTypes.PROJECT_CREATED_FROM_TEMPLATE },
-    recordData,
-  );
+      type: '-',
+      item: {
+        ...createProjectDto,
+        type: ItemTypes.PROJECT_CREATED_FROM_TEMPLATE,
+      },
+      records: [],
+    });
 };
 
 export const upsertTemplate = async (ownerId, templateDto: any = {}) => {
@@ -259,7 +208,7 @@ export const upsertTemplate = async (ownerId, templateDto: any = {}) => {
     return updateItem(
       { ownerId },
       {
-        indexNodeId: itemNode?.indexNodeId?.$oid,
+        iNodeId: itemNode?.iNodeId?.$oid,
         ...templateDto,
         type: ItemTypes.TEMPLATE,
         name: templateDto.showName,
@@ -280,7 +229,6 @@ export const upsertTemplate = async (ownerId, templateDto: any = {}) => {
           ...typeData,
         },
       },
-      {},
     );
   }
 };
@@ -326,7 +274,7 @@ export const isTemplateVersionHasExisted = async (
 export const remove = async (iNodeId: string) => {
   console.log('remove', iNodeId);
   const deleteChildren = getDB()
-    .collection('indexNode')
+    .collection('iNode')
     .deleteMany({
       where: {
         parentId: iNodeId,
@@ -336,11 +284,11 @@ export const remove = async (iNodeId: string) => {
     .collection('acl')
     .deleteMany({
       where: {
-        indexNodeId: iNodeId,
+        iNodeId: iNodeId,
       },
     });
   const deleteCurrent = getDB()
-    .collection('indexNode')
+    .collection('iNode')
     .delete({
       where: { id: iNodeId },
     });
@@ -360,7 +308,7 @@ export const remove = async (iNodeId: string) => {
 
 export const findUnique = async (id: string) => {
   return getDB()
-    .collection('indexNode')
+    .collection('iNode')
     .findUnique({
       where: { id },
       include: {
@@ -390,14 +338,7 @@ export const findTemplateNodeByTemplateName = async (templateName?: string) => {
 };
 
 export const getParentNodeList = async (id: string) => {
-  const node = await getDB()
-    .collection('indexNode')
-    .findUnique({
-      where: { id: id },
-      include: {
-        item: {},
-      },
-    });
+  const node = await getDB().collection('iNode').findOne({ _id: id });
   if (!node) {
     return [];
   } else if (node && !node.parentId) {
@@ -420,7 +361,7 @@ export const getSharedNodeAccessControlForUser = async (
     .findUnique({
       where: {
         indexNodeId_userId: {
-          indexNodeId: iNodeId,
+          iNodeId: iNodeId,
           userId: userId,
         },
       },
@@ -429,7 +370,7 @@ export const getSharedNodeAccessControlForUser = async (
     return acl;
   } else {
     const node = await getDB()
-      .collection('indexNode')
+      .collection('iNode')
       .findUnique({
         where: {
           id: iNodeId,
@@ -447,16 +388,9 @@ export const checkUserHasAccessToNode = async (
   iNodeId: string,
   userId: string,
 ) => {
-  const node = await getDB()
-    .collection('indexNode')
-    .findUnique({
-      where: {
-        id: iNodeId,
-      },
-      include: {
-        item: true,
-      },
-    });
+  const node = await getDB().collection('iNode').findOne({
+    _id: iNodeId,
+  });
   if (!node) {
     return false;
   }

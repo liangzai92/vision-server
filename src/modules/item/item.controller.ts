@@ -10,16 +10,11 @@ import {
   Req,
 } from '@nestjs/common';
 import { ItemService } from './item.service';
+import { convertToNumber } from '@/utils';
 
 @Controller('item')
 export class ItemController {
   constructor(private readonly itemService: ItemService) {}
-
-  @Post('project')
-  async createProject(@Req() request, @Body() createProjectDto: any) {
-    const ownerId = request.user?.userId;
-    return this.itemService.createProject(ownerId, createProjectDto);
-  }
 
   @Post('copy')
   createProjectByCopyProject(
@@ -72,8 +67,8 @@ export class ItemController {
     const ownerId = request.user?.userId;
     return this.itemService.findUserAllFolderAndItem(ownerId, {
       parentId: parentId,
-      page: +page,
-      pageSize: +pageSize,
+      page: convertToNumber(page),
+      pageSize: convertToNumber(pageSize),
       isTemplate: isTemplate === 'true' ? true : false,
     });
   }
@@ -105,13 +100,19 @@ export class ItemController {
     return this.itemService.remove(id);
   }
 
+  @Post('project')
+  async createPage(@Req() request, @Body() pageDto: any) {
+    const ownerId = request.user?.userId;
+    return this.itemService.createItem(pageDto, ownerId);
+  }
+
   @Patch('project/:id')
-  updateProject(
+  updateItemInfo(
     @Req() request,
     @Param('id') id: string,
     @Body() updateProjectDto: any,
   ) {
     const operatorId = request.user?.userId;
-    return this.itemService.updateProject(operatorId, id, updateProjectDto);
+    return this.itemService.updateItemInfo(id, updateProjectDto, operatorId);
   }
 }

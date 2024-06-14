@@ -13,6 +13,9 @@ export class AuthService {
   async authenticateUser(payload) {
     const { userId } = payload;
     const user: any = await this.userService.findUserByUserId(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
     return user;
   }
 
@@ -29,19 +32,16 @@ export class AuthService {
 
   async loginWithXDFStaff(xdfStaffUserData) {
     const { email } = xdfStaffUserData;
-    let user: any = await this.userService.findUserByXDFStaffInfo({ email });
-    console.log('findUserByXDFStaffInfo', user);
+    let user: any = await this.userService.findUserByXDFStaff({ email });
     if (!user) {
-      const result: any =
-        await this.userService.createUserWithXDFStaff(xdfStaffUserData);
-      console.log('新的 xdf staff 用户', result);
-      user = result.userProfile;
+      user = await this.userService.createUserWithXDFStaff(xdfStaffUserData);
+      console.log('loginWithXDFStaff 新用户 首次登录', user);
     } else {
-      user = await this.userService.updateUserXDFStaffInfo(
+      user = await this.userService.updateUserXDFStaffInfoByUserId(
         user.userId,
         xdfStaffUserData,
       );
-      console.log('更新用户数据', user);
+      console.log('loginWithXDFStaff 老用户', user);
     }
     const access_token = await this.jwtService.signAsync({
       userId: user.userId,

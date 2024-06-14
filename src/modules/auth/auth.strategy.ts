@@ -1,9 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { Strategy, ExtractJwt } from 'passport-jwt';
+import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants';
 import { AuthService } from './auth.service';
 import { JWT_CONSTANTS } from './constants';
-import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants';
 
 @Injectable()
 export class JwtAuthStrategy extends PassportStrategy(Strategy) {
@@ -23,8 +23,7 @@ export class JwtAuthStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: any) {
-    console.log('---jwt验证通过～payload', payload);
+  validate(payload: any) {
     return this.authService.authenticateUser(payload);
   }
 }

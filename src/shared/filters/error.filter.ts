@@ -27,9 +27,8 @@ export class ErrorFilter implements ExceptionFilter {
       // For example, if you have custom application-specific errors, you can handle them separately
       // and return appropriate status codes and error messages
       status = HttpStatus.BAD_REQUEST;
-      message = 'BAD_REQUEST';
+      message = exception.message || 'BAD_REQUEST';
     }
-
     response.status(status).json({
       code: status,
       message,

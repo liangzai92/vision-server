@@ -6,10 +6,13 @@ import {
   Param,
   Delete,
   Req,
+  Post,
+  Query,
 } from '@nestjs/common';
 
 import { UserService } from './user.service';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { convertToNumber } from '@/utils';
 
 @Controller('user')
 export class UserController {
@@ -20,10 +23,14 @@ export class UserController {
     return this.userService.findAll();
   }
 
-  @Get('data')
-  getUserData(@Req() request) {
-    const userId = request.user?.userId;
-    return request.user;
+  @Get('xdf/staff')
+  getUserList(@Query() query) {
+    const payload = {
+      ...query,
+      page: convertToNumber(query.page),
+      pageSize: convertToNumber(query.pageSize),
+    };
+    return this.userService.getUserList(payload);
   }
 
   @Get(':id')

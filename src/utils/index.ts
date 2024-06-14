@@ -35,3 +35,7 @@ export function convertToNumber(input: string | number): number | null {
   }
   return null;
 }
+
+export function convertUpperCamelCaseToLowerCamelCase(str) {
+  return str.charAt(0).toLowerCase() + str.slice(1);
+}

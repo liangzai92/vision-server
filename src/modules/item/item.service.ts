@@ -1,25 +1,30 @@
 import { Injectable } from '@nestjs/common';
 
 import { publishResources } from 'src/utils/publish';
-import { IndexNodeService } from '../index-node/index-node.service';
-import * as indexNodeRepository from '../index-node/index-node.repository';
+import { INodeService } from '../i-node/i-node.service';
+import * as iNodeRepository from '../i-node/i-node.repository';
 import { throwHttpException } from '@/utils/throwHttpException';
-import { getDB } from '@/helpers/mongo';
+import { findWithPagination, getDB } from '@/helpers/mongo';
+import { convertToNumber } from '@/utils';
 
 @Injectable()
 export class ItemService {
-  constructor(private readonly indexNodeService: IndexNodeService) {}
+  constructor(private readonly iNodeService: INodeService) {}
 
-  async createProject(ownerId, createProjectDto: any, recordData?: any) {
-    return indexNodeRepository.createProject(
-      ownerId,
-      createProjectDto,
-      recordData,
-    );
+  async createItem(itemDto: any, ownerId) {
+    const result = await iNodeRepository.createItem(itemDto, ownerId);
+    return iNodeRepository.findOneById(result.insertedId);
   }
 
-  async updateProject(operatorId, iNodeId, createProjectDto: any = {}) {
-    return indexNodeRepository.updateProject(iNodeId, createProjectDto);
+  async updateItemInfo(iNodeId, createProjectDto: any = {}, operatorId) {
+    const updateResult = await iNodeRepository.updateItemInfo(
+      iNodeId,
+      createProjectDto,
+    );
+    if (updateResult?.acknowledged) {
+      return iNodeRepository.findOneById(iNodeId);
+    }
+    return null;
   }
 
   async createProjectByCopyProject(
@@ -27,16 +32,12 @@ export class ItemService {
     copyFromNodeId,
     createProjectDto: any = {},
   ) {
-    const node = await this.indexNodeService.findUnique(copyFromNodeId);
+    const node = await this.iNodeService.findUnique(copyFromNodeId);
     if (!node) {
       return throwHttpException('您要复制的项目不存在');
     }
     const record: any = node.item.records[0] || {};
-    return indexNodeRepository.createProject(
-      ownerId,
-      createProjectDto,
-      record.data,
-    );
+    return iNodeRepository.createItem(ownerId, createProjectDto);
   }
 
   async createProjectFromTemplate(
@@ -44,54 +45,33 @@ export class ItemService {
     templateNodeId,
     createProjectDto: any = {},
   ) {
-    return indexNodeRepository.createProjectFromTemplate(
-      ownerId,
-      {
-        ...createProjectDto,
-        typeData: {
-          templateNodeId: templateNodeId,
-        },
+    return iNodeRepository.createProjectFromTemplate(ownerId, {
+      ...createProjectDto,
+      typeData: {
+        templateNodeId: templateNodeId,
       },
-      {},
-    );
+    });
   }
 
   async upsertTemplate(ownerId, createINodeDto) {
-    return indexNodeRepository.upsertTemplate(ownerId, createINodeDto);
+    return iNodeRepository.upsertTemplate(ownerId, createINodeDto);
   }
 
   async isCanAddTemplate(ownerId, createINodeDto) {
-    return indexNodeRepository.isTemplateVersionHasExisted(
-      ownerId,
-      createINodeDto,
-    );
+    return iNodeRepository.isTemplateVersionHasExisted(ownerId, createINodeDto);
   }
 
   async findAll(payload: any = {}) {
-    const { ownerId, parentId, page, pageSize } = payload;
-    const skip = (page - 1) * pageSize;
-    const take = pageSize;
-    const totalCount = await getDB().collection('item').count();
-    const totalPages = Math.ceil(totalCount / pageSize);
-    const data = await getDB().collection('item').findMany({
-      skip,
-      take,
+    const { ownerId, parentId } = payload;
+    const condition: any = {};
+    return findWithPagination(getDB().collection('item'), condition, {
+      page: convertToNumber(payload.page),
+      pageSize: convertToNumber(payload.pageSize),
     });
-
-    const hasMore = page < totalPages;
-    return {
-      hasMore,
-      list: data,
-      pageSize,
-      page,
-      nextPage: page + 1,
-      totalCount,
-      totalPages,
-    };
   }
 
   async findUserAllFolderAndItem(ownerId, payload: any = {}) {
-    return this.indexNodeService.findUserAllFolderAndItem(ownerId, payload);
+    return this.iNodeService.findUserAllFolderAndItem(ownerId, payload);
   }
 
   async findUnique(itemId: string) {
@@ -125,30 +105,24 @@ export class ItemService {
     const published = updateProjectDto?.published;
     return getDB()
       .collection('item')
-      .update({
-        where: { id: itemId },
-        data: {
-          published,
-          version: nextVersion,
-          cover,
-          records: {
-            create: [
-              {
-                version: nextVersion,
-                data: updateProjectDto,
-              },
-            ],
-          },
-        },
-        include: {
-          records: {
-            take: 1,
-            orderBy: {
-              createdAt: 'desc',
+      .updateOne(
+        { id: itemId },
+        {
+          $set: {
+            published,
+            version: nextVersion,
+            cover,
+            records: {
+              create: [
+                {
+                  version: nextVersion,
+                  data: updateProjectDto,
+                },
+              ],
             },
           },
         },
-      });
+      );
   }
 
   async publish(userId, itemId: string, updateProjectDto: any) {
