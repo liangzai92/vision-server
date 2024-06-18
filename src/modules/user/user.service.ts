@@ -1,28 +1,36 @@
-import { Injectable } from '@nestjs/common';
-
-import { trimWhiteSpace } from 'src/utils';
-import { throwHttpException } from 'src/utils/throwHttpException';
-import { hashPassword, verifyPassword } from 'src/utils/password';
-
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { throwHttpException } from '@/utils/throwHttpException';
+import { hashPassword, verifyPassword } from '@/utils/password';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as userRepository from './user.repository';
 
 @Injectable()
 export class UserService {
-  async create(createUserDto: CreateUserDto) {
+  async createUser(createUserDto: CreateUserDto) {
     const { name = '', password = '' } = createUserDto;
-    const isUserNameExists = await userRepository.checkUserNameExists(
-      trimWhiteSpace(name),
-    );
-    if (isUserNameExists) throwHttpException('用户名已存在');
+    const isUserNameExists = await userRepository.checkUserNameExists(name);
+    if (isUserNameExists) {
+      throw new ConflictException('用户名已存在');
+    }
     const hashedPassword = await hashPassword(password);
-    const res = await userRepository.create({
-      name: trimWhiteSpace(name),
+    const result = await userRepository.createUser({
+      name: name,
       password: hashedPassword,
     });
-    console.log(res);
-    return res?.userProfile;
+    if (result.insertedId) {
+      const user = await userRepository.findOne({
+        _id: result.insertedId,
+      });
+      delete user.password;
+      delete user._id;
+      return user;
+    }
+    return result;
   }
 
   async findAll() {
@@ -32,15 +40,15 @@ export class UserService {
     };
   }
 
-  async findUserByUserId(userId: string) {
+  findUserByUserId(userId: string) {
     return userRepository.findUserByUserId(userId);
   }
 
   async update(id: string, updateUserDto: UpdateUserDto) {
     const res = await userRepository.update(id, {
       ...updateUserDto,
-      name: trimWhiteSpace(updateUserDto.name),
-      nickname: trimWhiteSpace(updateUserDto.nickname),
+      name: updateUserDto.name,
+      nickname: updateUserDto.nickname,
     });
     return res;
   }
@@ -52,16 +60,19 @@ export class UserService {
     };
   }
 
-  async authenticateUserByUserNameAndPassword(username, password) {
-    const user: any = await userRepository.findUserByUserName(
-      trimWhiteSpace(username),
-    );
-    // throw new UnauthorizedException();
-    if (!user) throwHttpException('Invalid username or password');
+  async authenticateUserByUserNameAndPassword(name, password) {
+    const user: any = await userRepository.findUserByUserName(name);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (!user?.password) {
+      throw new Error('用户还没有设置过密码');
+    }
     const passwordMatch = await verifyPassword(password, user.password);
-    if (!passwordMatch) throwHttpException('Invalid username or password');
-    const userInfo = await userRepository.findUserByUserId(user.userId);
-    return userInfo;
+    if (!passwordMatch) {
+      return throwHttpException('Invalid username or password');
+    }
+    return userRepository.findUserByUserId(user.userId);
   }
 
   async createUserWithXDFStaff(xdfStaff: any) {

@@ -32,7 +32,6 @@ export const getLoginUrl = () => {
   };
   const queryString = qs.stringify(mergedSearchParams);
   const url = `${baseUrl}?${queryString}`;
-  console.log('getLoginUrl', url);
   return url;
 };
 
@@ -44,7 +43,6 @@ export const getLogoutUrl = (searchParams) => {
   };
   const queryString = qs.stringify(mergedSearchParams);
   const url = `${baseUrl}?${queryString}`;
-  console.log('getLogoutUrl', url);
   return url;
 };
 

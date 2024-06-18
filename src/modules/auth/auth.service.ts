@@ -1,33 +1,38 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
 import { UserService } from '@/modules/user/user.service';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly userService: UserService,
+    private readonly configService: ConfigService,
     private jwtService: JwtService,
   ) {}
+
+  async register(registerInput) {
+    return this.userService.createUser(registerInput);
+  }
+
+  async login(name, password) {
+    const user = await this.userService.authenticateUserByUserNameAndPassword(
+      name,
+      password,
+    );
+    return this.generateTokens({
+      userId: user.userId,
+    });
+  }
 
   async authenticateUser(payload) {
     const { userId } = payload;
     const user: any = await this.userService.findUserByUserId(userId);
     if (!user) {
-      throw new Error('User not found');
+      console.log('没有查到这个用户', userId);
+      return false;
     }
     return user;
-  }
-
-  async signup(user) {
-    return this.userService.create(user);
-  }
-
-  async signIn(username, password) {
-    return this.userService.authenticateUserByUserNameAndPassword(
-      username,
-      password,
-    );
   }
 
   async loginWithXDFStaff(xdfStaffUserData) {
@@ -43,11 +48,39 @@ export class AuthService {
       );
       console.log('loginWithXDFStaff 老用户', user);
     }
-    const access_token = await this.jwtService.signAsync({
+    return this.generateTokens({
       userId: user.userId,
     });
+  }
+
+  generateTokens(payload: { userId: string }) {
     return {
-      access_token,
+      accessToken: this.generateAccessToken(payload),
+      refreshToken: this.generateRefreshToken(payload),
     };
+  }
+
+  private generateAccessToken(payload: { userId: string }) {
+    return this.jwtService.sign(payload);
+  }
+
+  private generateRefreshToken(payload: { userId: string }): string {
+    return this.jwtService.sign(payload, {
+      secret: this.configService.get('JWT_REFRESH_SECRET'),
+      expiresIn: '7d',
+    });
+  }
+
+  refreshToken(token: string) {
+    try {
+      const { userId } = this.jwtService.verify(token, {
+        secret: this.configService.get('JWT_REFRESH_SECRET'),
+      });
+      return this.generateTokens({
+        userId,
+      });
+    } catch (e) {
+      throw new UnauthorizedException();
+    }
   }
 }

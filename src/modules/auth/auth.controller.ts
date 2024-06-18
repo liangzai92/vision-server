@@ -7,16 +7,16 @@ import {
   Get,
   Post,
   Req,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
-import { AuthService } from './auth.service';
-
-import { CreateUserDto } from '../user/dto/create-user.dto';
-import { Public } from './public.decorator';
-import { ACCESS_TOKEN_COOKIE_NAME } from '@/constants';
+import { setTokenToCookie } from '@/helpers/tokenInContext';
 import { verifyAuthCode } from '@/helpers/xdf-staff-sso';
 import { getUserByAccount } from '@/helpers/xdf-staff-A2';
+import { AuthService } from './auth.service';
+import { CreateUserDto } from '../user/dto/create-user.dto';
+import { Public } from './public.decorator';
+import { TokenInterceptor } from './interceptors/token.interceptor';
 
 @Controller('auth')
 export class AuthController {
@@ -26,21 +26,29 @@ export class AuthController {
   ) {}
 
   @Public()
-  @Post('signup')
-  signup(@Body() createUserDto: CreateUserDto) {
-    return this.authService.signup(createUserDto);
+  @Post('register')
+  register(@Body() createUserInput: CreateUserDto) {
+    return this.authService.register(createUserInput);
+  }
+
+  @UseInterceptors(TokenInterceptor)
+  @Public()
+  @Post('login')
+  async login(@Body() body: { name: string; password: string }) {
+    const { name, password } = body;
+    return this.authService.login(name, password);
   }
 
   @Public()
-  @Post('login')
-  login(@Body() body: { name: string; password: string }) {
-    const { name, password } = body;
-    return this.authService.signIn(name, password);
+  @Get('check/login')
+  checkLogin(@Req() request) {
+    return request.user?.userId;
   }
 
-  @Get('check/login')
-  checkLogin(@Req() request: Request) {
-    // return this.userService.checkLogin(id);
+  @UseInterceptors(TokenInterceptor)
+  @Get('refreshToken')
+  async refreshToken(@Query('token') token) {
+    return this.authService.refreshToken(token);
   }
 
   @Public()
@@ -91,13 +99,8 @@ export class AuthController {
       realName: xdfStaffAccountInfo?.RealName || '',
       ac: xdfStaffAccountInfo?.Ac || '',
     };
-    const result = await this.authService.loginWithXDFStaff(xdfStaff);
-    const access_token = result.access_token;
-    response.cookie(ACCESS_TOKEN_COOKIE_NAME, access_token, {
-      maxAge: 24 * 60 * 60 * 1000,
-      secure: true,
-      // sameSite: 'none',
-    });
+    const { accessToken } = await this.authService.loginWithXDFStaff(xdfStaff);
+    setTokenToCookie(response, accessToken);
     response.redirect(redirect_url);
   }
 }

@@ -98,17 +98,3 @@ location ~* ^/liangzai/(.*)$ {
 
 ### 测试和生产环境
 mongo 链接在生产和测试环境发布的时候要**内网连接**，具体直接看[阿里云MongoDB 数据库详细信息](https://mongodb.console.aliyun.com/replicate/cn-beijing/instances/dds-2ze8524d6978f454/basicInfo?spm=5176.yaochi_portal_overview.0.0.59214d7e2R6iWE)
-
-## 关于 Prisma
-
-```sh
-npx prisma generate
-npx prisma db push
-```
-- Must be running MongoDB 4.2+ as a replica set
-- Whenever you update your Prisma schema, you will need to run the`prisma db push` command to create new indexes and regenerate Prisma Client.
-- MongoDB does not support `@@id`. MongoDB does not support composite IDs, which means you cannot identify a model with a `@@id` attribute.
-
-## 知音楼登录
-- 接入知音楼登录，参考[造物神](https://service.saash.vdyoo.com/new/app/list/my)。
-- 相关配置已写入`.env.*` 文件

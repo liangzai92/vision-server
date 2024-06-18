@@ -1,46 +1,42 @@
 import { ObjectId } from 'mongodb';
+import { trimWhiteSpace } from '@/utils';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { convertToObjectId, findWithPagination, getDB } from '@/helpers/mongo';
 
 export async function checkUserNameExists(name = '') {
-  const user = await getDB().collection('user').findOne({
-    name: name,
-  });
+  const user = await getDB()
+    .collection('user')
+    .findOne({
+      name: trimWhiteSpace(name),
+    });
 
   return user !== null;
 }
 
 export function findUserByUserName(name = '') {
-  return getDB().collection('user').findOne({
-    name: name,
-  });
+  return getDB()
+    .collection('user')
+    .findOne({
+      name: trimWhiteSpace(name),
+    });
 }
 
-export const create = async (createUserDto: CreateUserDto) => {
+export const createUser = async (createUserDto: CreateUserDto) => {
   const { name = '', password = '' } = createUserDto;
   return getDB()
     .collection('user')
-    .create({
-      data: {
-        name,
-        password,
-        userProfile: {
-          create: {},
-        },
-      },
-      select: {
-        userProfile: {
-          select: {
-            userId: true,
-          },
-        },
-      },
+    .insertOne({
+      userId: new ObjectId(),
+      name: trimWhiteSpace(name),
+      password,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 };
 
 export const findMany = () => {
-  return getDB().collection('user').findMany();
+  return getDB().collection('user').find().toArray();
 };
 
 export const findOne = (...args) => {
@@ -50,9 +46,14 @@ export const findOne = (...args) => {
 };
 
 export const findUserByUserId = (userId: string) => {
+  if (!userId) {
+    throw new Error('userId is required');
+  }
   return getDB()
     .collection('user')
-    .findOne({ userId: convertToObjectId(userId) });
+    .findOne({
+      userId: convertToObjectId(userId),
+    });
 };
 
 export const update = (id: string, updateUserDto: UpdateUserDto) => {
@@ -77,34 +78,6 @@ export const remove = (id: string) => {
     });
 };
 
-export function createUserWithXDFStaff(xdfStaff: any) {
-  return getDB().collection('user').insertOne({
-    userId: new ObjectId(),
-    xdfStaff: xdfStaff,
-  });
-}
-
-export const findUserByXDFStaff = ({ email }: any) => {
-  return getDB().collection('user').findOne({
-    'xdfStaff.email': email,
-  });
-};
-
-export function updateUserXDFStaffInfoByUserId(userId, xdfStaff: any = {}) {
-  return getDB()
-    .collection('user')
-    .updateOne(
-      {
-        userId: userId,
-      },
-      {
-        $set: {
-          xdfStaff: xdfStaff,
-        },
-      },
-    );
-}
-
 export const getUserList = ({ name }) => {
   function createRegexQuery(field, value) {
     return {
@@ -121,3 +94,34 @@ export const getUserList = ({ name }) => {
     ],
   });
 };
+
+export function createUserWithXDFStaff(xdfStaff: any) {
+  return getDB().collection('user').insertOne({
+    userId: new ObjectId(),
+    name: xdfStaff.ac,
+    nickName: xdfStaff.nickName,
+    xdfStaff: xdfStaff,
+  });
+}
+
+export const findUserByXDFStaff = ({ email }: any) => {
+  return getDB().collection('user').findOne({
+    'xdfStaff.email': email,
+  });
+};
+
+export function updateUserXDFStaffInfoByUserId(userId, xdfStaff: any = {}) {
+  return getDB()
+    .collection('user')
+    .updateOne(
+      {
+        userId: convertToObjectId(userId),
+      },
+      {
+        $set: {
+          xdfStaff: xdfStaff,
+          lastLoginAt: new Date(),
+        },
+      },
+    );
+}
