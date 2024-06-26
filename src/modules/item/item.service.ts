@@ -90,13 +90,13 @@ export class ItemService {
   }
 
   async updateItem(id: string, { schema, screenshot }: any, { operatorId }) {
-    const nextVersion = new Date().getTime() + '';
+    const now = new Date();
+    const nextVersion = now.getTime() + '';
     const update = {
       $set: {
-        item: {
-          version: nextVersion,
-          schema: schema,
-        },
+        'item.updatedAt': now,
+        'item.version': nextVersion,
+        'item.schema': schema,
       },
     };
     const updateResult = await iNodeRepository.updateINodeById(id, update);
@@ -107,22 +107,27 @@ export class ItemService {
   }
 
   async publishItem(id: string, { schema, screenshot }: any, { operatorId }) {
-    // const res = await publishResources(id, { schema, screenshot });
+    const res = await publishResources(id, { schema, screenshot });
     // console.log('publishResources', res);
-    const nextVersion = new Date().getTime() + '';
+    const now = new Date();
+    const nextVersion = now.getTime() + '';
+    const record = {
+      updatedAt: now,
+      version: nextVersion,
+      schema: schema,
+    };
     const update = {
       $set: {
-        item: {
-          published: true,
-          cover: screenshot,
-          version: nextVersion,
-          schema: schema,
-        },
+        'item.updatedAt': now,
+        'item.published': true,
+        'item.cover': screenshot,
+        'item.version': nextVersion,
+        'item.schema': schema,
       },
       $push: {
         records: {
-          version: nextVersion,
-          schema: schema,
+          $each: [record],
+          $position: 0,
         },
       },
     };

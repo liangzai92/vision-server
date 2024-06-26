@@ -14,8 +14,10 @@ import './test'; // todo just for test can be removed
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const configService = app.get(ConfigService);
   app.use(loggerMiddleware);
   app.use(cookieParser());
+  app.useStaticAssets(path.join(__dirname, '..', '.public'));
   app.useStaticAssets(path.join(__dirname, '..', 'public'));
   app.setBaseViewsDir(path.join(__dirname, '..', 'views'));
   app.setViewEngine('hbs');
@@ -27,7 +29,7 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
   app.useGlobalFilters(new ServiceExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
-  const configService = app.get(ConfigService);
+  app.setGlobalPrefix('api');
   await app.listen(configService.get('PORT'));
 }
 bootstrap();

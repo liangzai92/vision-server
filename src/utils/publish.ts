@@ -4,10 +4,10 @@ import * as url from 'url';
 import Handlebars from 'handlebars';
 import { getScreenShot } from './screenShot';
 
-const STATIC_FILE_DIR = path.resolve(process.cwd(), '..', `editor/public/`);
+const STATIC_FILE_DIR = path.resolve(process.cwd(), '.', `.public/`);
 const STATIC_TEMPLATE_FILE_APP_B = path.resolve(
   STATIC_FILE_DIR,
-  'template/app-pc/index.html',
+  'mobile-render/index.html',
 );
 
 export const getResourceInfo = (relativeDir, filename) => {
@@ -27,7 +27,7 @@ export const getResourceInfo = (relativeDir, filename) => {
   };
 };
 
-export const getPublishedResourceInfo = (id) => {
+const getPublishedResourceInfo = (id) => {
   const indexHtml = getResourceInfo('', `${id}.html`);
   const screenshot = getResourceInfo(`item/${id}`, `cover-${id}.png`);
   return {
@@ -36,7 +36,7 @@ export const getPublishedResourceInfo = (id) => {
   };
 };
 
-export const publishResources = async (id, projectData) => {
+export const publishToLocal = async (id, projectData) => {
   const { indexHtml, screenshot } = getPublishedResourceInfo(id);
   /**
    * render html
@@ -71,4 +71,16 @@ export const publishResources = async (id, projectData) => {
     screenshot,
     link: indexHtml.fullFileUrl,
   };
+};
+
+export const publishResources = (id, projectData) => {
+  if (process.env.NODE_ENV === 'production') {
+    return publishToLocal(id, projectData);
+  } else if (process.env.NODE_ENV === 'test') {
+    return publishToLocal(id, projectData);
+  } else if (process.env.NODE_ENV === 'development') {
+    return publishToLocal(id, projectData);
+  } else {
+    return publishToLocal(id, projectData);
+  }
 };

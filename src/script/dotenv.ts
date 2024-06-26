@@ -24,12 +24,9 @@ export const dotenvFiles = [
   paths.dotenv,
 ].filter(Boolean);
 
+const envDir = '../../env';
 dotenvFiles.forEach((dotenvFile) => {
-  const dotenvFilePath = path.resolve(
-    __dirname,
-    '../../',
-    dotenvFile as string,
-  );
+  const dotenvFilePath = path.resolve(__dirname, envDir, dotenvFile as string);
   if (fs.existsSync(dotenvFilePath as string)) {
     dotenvExpand.expand(
       dotenv.config({

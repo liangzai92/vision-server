@@ -12,5 +12,5 @@ RUN npm install -g pm2
 RUN pnpm install
 RUN pnpm run build
 
-EXPOSE 9528
+EXPOSE 9527
 CMD ["pm2", "start", "ecosystem.config.js", "--no-daemon"]

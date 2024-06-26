@@ -10,5 +10,5 @@ if [ $(docker images -q $IMAGE_NAME:$TAG) ]; then
     docker rmi $IMAGE_NAME:$TAG
 fi
 docker image pull $IMAGE_NAME:$TAG
-docker container run --name $CONTAINER_NAME -p 9528:9528 -d -e NODE_ENV=test $IMAGE_NAME:$TAG
+docker container run --name $CONTAINER_NAME -p 9527:9527 -d -e NODE_ENV=test $IMAGE_NAME:$TAG
 docker container ls

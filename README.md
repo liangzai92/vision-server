@@ -65,7 +65,7 @@ $ pnpm run start:prod
 ### Nginx 配置
 nginx 配置路径，测试环境为例：`/etc/nginx/conf.d/editor-test.adebibi.com.conf`。
 
-代理所有已`/liangzai`开头的请求到本地的 `9528` 端口，具体配置如下：
+代理所有已`/liangzai`开头的请求到本地的 `9527` 端口，具体配置如下：
 
 ```conf
 location ~* ^/liangzai/(.*)$ {
@@ -73,7 +73,7 @@ location ~* ^/liangzai/(.*)$ {
   proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
   proxy_set_header Host $http_host;
   proxy_set_header X-NginX-Proxy true;
-  proxy_pass http://127.0.0.1:9528/$1$is_args$args;
+  proxy_pass http://127.0.0.1:9527/$1$is_args$args;
   proxy_redirect off;
 
   if ($request_method = 'OPTIONS') {
@@ -88,7 +88,6 @@ location ~* ^/liangzai/(.*)$ {
 >⚠️：既然nginx 是这样配置的，那对应前端请求的时候，需要注意别漏掉`/liangzai`前缀，接口访问注意是`https://editor-test.adebibi.com/liangzai`和`https://editor.adebibi.com/liangzai`。
 
 ## Todo
-- 目前 ticket是参考彩虹猫暂时本地一个文件存储的，先凑活用，后面需要改成数据库和redis。
 
 ## 关于mongo
 
