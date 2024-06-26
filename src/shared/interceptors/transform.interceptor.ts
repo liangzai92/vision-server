@@ -15,7 +15,7 @@ export class TransformInterceptor implements NestInterceptor {
         return {
           code: 0,
           message: '请求成功',
-          data,
+          data: data,
         };
       }),
     );

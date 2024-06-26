@@ -1,18 +1,20 @@
 import { Injectable } from '@nestjs/common';
-
-import { publishResources } from 'src/utils/publish';
-import { INodeService } from '../i-node/i-node.service';
-import * as iNodeRepository from '../i-node/i-node.repository';
-import { throwHttpException } from '@/utils/throwHttpException';
+import { publishResources } from '@/utils/publish';
 import { findWithPagination, getDB } from '@/helpers/mongo';
 import { convertToNumber } from '@/utils';
+import { INodeService } from '../i-node/i-node.service';
+import * as iNodeRepository from '../i-node/i-node.repository';
 
 @Injectable()
 export class ItemService {
   constructor(private readonly iNodeService: INodeService) {}
 
-  async createItem(itemDto: any, ownerId) {
-    const result = await iNodeRepository.createItem(itemDto, ownerId);
+  async createItem({ name, description }: any, { ownerId }) {
+    const result = await iNodeRepository.createItem({
+      ownerId: ownerId,
+      name: name,
+      description: description,
+    });
     return iNodeRepository.findOneById(result.insertedId);
   }
 
@@ -32,12 +34,12 @@ export class ItemService {
     copyFromNodeId,
     createProjectDto: any = {},
   ) {
-    const node = await this.iNodeService.findUnique(copyFromNodeId);
-    if (!node) {
-      return throwHttpException('您要复制的项目不存在');
-    }
-    const record: any = node.item.records[0] || {};
-    return iNodeRepository.createItem(ownerId, createProjectDto);
+    // const node = await this.iNodeService.findOneById(copyFromNodeId);
+    // if (!node) {
+    //   return throwServiceException(2323,'您要复制的项目不存在');
+    // }
+    // const record: any = node.item.records[0] || {};
+    // return iNodeRepository.createItem(ownerId, createProjectDto);
   }
 
   async createProjectFromTemplate(
@@ -74,20 +76,8 @@ export class ItemService {
     return this.iNodeService.findUserAllFolderAndItem(ownerId, payload);
   }
 
-  async findUnique(itemId: string) {
-    return getDB()
-      .collection('item')
-      .findUnique({
-        where: { id: itemId },
-        include: {
-          records: {
-            take: 1,
-            orderBy: {
-              createdAt: 'desc',
-            },
-          },
-        },
-      });
+  async findOneById(id: string) {
+    return iNodeRepository.findOneById(id);
   }
 
   async remove(itemId: string) {
@@ -99,40 +89,47 @@ export class ItemService {
     return res;
   }
 
-  async update(userId, itemId: string, updateProjectDto: any) {
+  async updateItem(id: string, { schema, screenshot }: any, { operatorId }) {
     const nextVersion = new Date().getTime() + '';
-    const cover = updateProjectDto?.screenshot;
-    const published = updateProjectDto?.published;
-    return getDB()
-      .collection('item')
-      .updateOne(
-        { id: itemId },
-        {
-          $set: {
-            published,
-            version: nextVersion,
-            cover,
-            records: {
-              create: [
-                {
-                  version: nextVersion,
-                  data: updateProjectDto,
-                },
-              ],
-            },
-          },
+    const update = {
+      $set: {
+        item: {
+          version: nextVersion,
+          schema: schema,
         },
-      );
+      },
+    };
+    const updateResult = await iNodeRepository.updateINodeById(id, update);
+    if (updateResult?.acknowledged) {
+      return iNodeRepository.findOneById(id);
+    }
+    return null;
   }
 
-  async publish(userId, itemId: string, updateProjectDto: any) {
-    const res = await publishResources(itemId, updateProjectDto);
-    console.log('publishResources', res);
-    await this.update(userId, itemId, {
-      ...updateProjectDto,
-      published: true,
-      screenshot: res.screenshot?.fullFileUrl,
-    });
-    return res;
+  async publishItem(id: string, { schema, screenshot }: any, { operatorId }) {
+    // const res = await publishResources(id, { schema, screenshot });
+    // console.log('publishResources', res);
+    const nextVersion = new Date().getTime() + '';
+    const update = {
+      $set: {
+        item: {
+          published: true,
+          cover: screenshot,
+          version: nextVersion,
+          schema: schema,
+        },
+      },
+      $push: {
+        records: {
+          version: nextVersion,
+          schema: schema,
+        },
+      },
+    };
+    const updateResult = await iNodeRepository.updateINodeById(id, update);
+    if (updateResult?.acknowledged) {
+      return iNodeRepository.findOneById(id);
+    }
+    return null;
   }
 }

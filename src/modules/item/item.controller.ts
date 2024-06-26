@@ -73,37 +73,39 @@ export class ItemController {
     });
   }
 
+  @Post()
+  async createItem(@Req() request, @Body() itemDto: any) {
+    const ownerId = request.user?.userId;
+    console.log('createItem', itemDto);
+    return this.itemService.createItem(itemDto, { ownerId });
+  }
+
   @Get(':id')
-  findUnique(@Param('id') id: string) {
-    return this.itemService.findUnique(id);
+  findOneById(@Param('id') id: string) {
+    return this.itemService.findOneById(id);
   }
 
   @Patch(':id')
-  update(
+  updateItem(
     @Req() request,
     @Param('id') id: string,
     @Query('action') action,
     @Body() updateProjectDto: any,
   ) {
+    const operatorId = request.user?.userId;
     if (action === 'publish') {
-      return this.itemService.publish(
-        request.user?.userId,
-        id,
-        updateProjectDto,
-      );
+      return this.itemService.publishItem(id, updateProjectDto, {
+        operatorId,
+      });
     }
-    return this.itemService.update(request.user?.userId, id, updateProjectDto);
+    return this.itemService.updateItem(id, updateProjectDto, {
+      operatorId,
+    });
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.itemService.remove(id);
-  }
-
-  @Post('project')
-  async createPage(@Req() request, @Body() pageDto: any) {
-    const ownerId = request.user?.userId;
-    return this.itemService.createItem(pageDto, ownerId);
   }
 
   @Patch('project/:id')

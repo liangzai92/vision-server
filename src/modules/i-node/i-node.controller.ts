@@ -20,7 +20,7 @@ export class INodeController {
   @Post('directory')
   createDirectory(@Req() request, @Body() createINodeDto: any) {
     const ownerId = request.user?.userId;
-    return this.iNodeService.createDirectory(createINodeDto, ownerId);
+    return this.iNodeService.createDirectory(createINodeDto, { ownerId });
   }
 
   @Patch('directory/:id')
@@ -53,11 +53,13 @@ export class INodeController {
 
   @Post('acl')
   setFileAcl(@Req() request, @Body() aclData: any) {
-    return this.iNodeService.setFileAcl(request.user?.userId, aclData);
+    const operatorId = request.user?.userId;
+    return this.iNodeService.setFileAcl(aclData, { operatorId });
   }
 
   @Get('acl')
   getUserNodesSharedByOtherUsers(@Req() request, @Query() params) {
+    const operatorId = request.user?.userId;
     return this.iNodeService.getUserNodesSharedByOtherUsers(
       request.user?.userId,
       params,
@@ -65,7 +67,7 @@ export class INodeController {
   }
 
   @Get(':id')
-  async findUnique(@Req() request, @Param('id') id: string) {
+  async findOneById(@Req() request, @Param('id') id: string) {
     const hasPermission = await this.iNodeService.checkUserHasAccessToNode({
       userId: request?.user?.userId,
       iNodeId: id,
@@ -73,7 +75,7 @@ export class INodeController {
     if (!hasPermission) {
       throw new ForbiddenException();
     }
-    return this.iNodeService.findUnique(id);
+    return this.iNodeService.findOneById(id);
   }
 
   @Patch(':id')

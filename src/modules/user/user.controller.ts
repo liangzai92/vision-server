@@ -34,7 +34,7 @@ export class UserController {
   }
 
   @Get(':id')
-  findUnique(@Param('id') id: string) {
+  findUserByUserId(@Param('id') id: string) {
     return this.userService.findUserByUserId(id);
   }
 

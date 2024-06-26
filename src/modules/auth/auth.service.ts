@@ -20,9 +20,12 @@ export class AuthService {
       name,
       password,
     );
-    return this.generateTokens({
-      userId: user.userId,
-    });
+    if (user) {
+      return this.generateTokens({
+        userId: user.userId,
+      });
+    }
+    return false;
   }
 
   async authenticateUser(payload) {

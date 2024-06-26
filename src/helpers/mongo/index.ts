@@ -80,3 +80,21 @@ export const findWithPagination = async (
     totalPage,
   };
 };
+
+export const withTransaction = async (operation) => {
+  let result = null;
+  const session = getClient().startSession();
+  try {
+    session.startTransaction();
+    result = await operation(session);
+    await session.commitTransaction();
+    console.log('Transaction committed successfully');
+  } catch (error) {
+    console.error('Transaction failed:', error);
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
+  return result;
+};

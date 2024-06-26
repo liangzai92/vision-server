@@ -1,22 +1,20 @@
 import { Injectable } from '@nestjs/common';
-
-import * as iNodeRepository from './i-node.repository';
-
-import { throwHttpException } from 'src/utils/throwHttpException';
 import { convertToNumber } from '@/utils';
+import { throwServiceException, ServiceStatus } from '@/helpers/exception';
 import { convertToObjectId, findWithPagination, getDB } from '@/helpers/mongo';
 import { ItemTypes } from '@/constants';
 import { UserService } from '../user/user.service';
+import * as iNodeRepository from './i-node.repository';
 
 @Injectable()
 export class INodeService {
   constructor(private readonly userService: UserService) {}
 
-  async createDirectory(ownerId, createINodeDto) {
-    const result = await iNodeRepository.createDirectory(
-      createINodeDto,
-      ownerId,
-    );
+  async createDirectory(createINodeDto, { ownerId }) {
+    const result = await iNodeRepository.createDirectory({
+      ...createINodeDto,
+      ownerId: ownerId,
+    });
     return iNodeRepository.findOne({
       _id: result.insertedId,
     });
@@ -37,9 +35,6 @@ export class INodeService {
     return `This action returns all iNode`;
   }
 
-  async findUnique(id: string) {
-    return iNodeRepository.findUnique(id);
-  }
   async update(iNodeId, updateIndexNodeDto: any = {}, operatorId) {
     const result = await iNodeRepository.updateDirectory(
       iNodeId,
@@ -140,17 +135,20 @@ export class INodeService {
     return res;
   }
 
-  async setFileAcl(operatorId, aclData: any) {
-    const { iNodeId, toUserId } = aclData;
+  async findOneById(id: string) {
+    return iNodeRepository.findOneById(id);
+  }
+
+  async setFileAcl(aclData: any, { operatorId }) {
+    const { iNodeId, to } = aclData;
+    const toUserId = to.userId;
     console.log('用户', operatorId, '把', iNodeId, '分享给', toUserId);
-    const node = await this.findUnique(iNodeId);
+    const node = await this.findOneById(iNodeId);
     if (!node) {
-      return throwHttpException('您要分享的项目不存在');
+      return throwServiceException(ServiceStatus.ItemNotFound);
     }
-    if (node.ownerId !== operatorId) {
-      throw new Error(
-        'You do not have permission to set access for this file.',
-      );
+    if (node.ownerId.equals(convertToObjectId(operatorId))) {
+      return throwServiceException(ServiceStatus.OwnerNoNeedToShare);
     }
     let toUser: any = null;
     if (toUserId) {
@@ -158,24 +156,19 @@ export class INodeService {
     }
     console.log('分享给用户：', toUser);
     if (!toUser) {
-      return throwHttpException('没有这个用户啊');
+      return throwServiceException(ServiceStatus.UserNotFound);
     }
     if (node.ownerId === toUser.userId) {
-      return throwHttpException('您是项目的主人，无需再分享给自己');
+      return throwServiceException(ServiceStatus.OwnerNoNeedToShare);
     }
-    const permissions = 'rwx';
-    return getDB()
-      .collection('acl')
-      .upsert({
-        where: {
-          indexNodeId_userId: {
-            iNodeId: iNodeId,
-            userId: toUser.userId,
-          },
-        },
-        create: { iNodeId: iNodeId, userId: toUser.userId, permissions },
-        update: { permissions },
-      });
+    const updateResult = await iNodeRepository.setFileAcl({
+      iNodeId,
+      toUserId: toUser.userId,
+    });
+    if (updateResult?.acknowledged) {
+      return true;
+    }
+    return false;
   }
 
   async getUserNodesSharedByOtherUsers(userId, payload: any = {}) {
@@ -213,9 +206,7 @@ export class INodeService {
       userId,
     );
     if (!acl || !acl.permissions?.includes('r')) {
-      return throwHttpException(
-        'You do not have permission to access this directory.',
-      );
+      return throwServiceException(ServiceStatus.PermissionDenied);
     }
     const condition = {
       parentId: parentId,

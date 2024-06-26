@@ -6,6 +6,7 @@ import { ConfigService } from '@nestjs/config';
 import * as cookieParser from 'cookie-parser';
 import loggerMiddleware from './shared/express/loggerMiddleware';
 import { ErrorFilter } from './shared/filters/error.filter';
+import { ServiceExceptionFilter } from './shared/filters/service-exception.filter';
 import { HttpExceptionFilter } from './shared/filters/http-exception.filter';
 import { TransformInterceptor } from './shared/interceptors/transform.interceptor';
 import { AppModule } from './modules/app.module';
@@ -24,6 +25,7 @@ async function bootstrap() {
   });
   app.useGlobalFilters(new ErrorFilter());
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalFilters(new ServiceExceptionFilter());
   app.useGlobalInterceptors(new TransformInterceptor());
   const configService = app.get(ConfigService);
   await app.listen(configService.get('PORT'));

@@ -1,13 +1,16 @@
 import {
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { throwHttpException } from '@/utils/throwHttpException';
+import { throwServiceException } from '@/helpers/exception';
 import { hashPassword, verifyPassword } from '@/utils/password';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as userRepository from './user.repository';
+import { ServiceStatus } from '@/helpers/exception';
 
 @Injectable()
 export class UserService {
@@ -63,14 +66,14 @@ export class UserService {
   async authenticateUserByUserNameAndPassword(name, password) {
     const user: any = await userRepository.findUserByUserName(name);
     if (!user) {
-      throw new NotFoundException('User not found');
+      return throwServiceException(ServiceStatus.UserNotFound);
     }
     if (!user?.password) {
-      throw new Error('用户还没有设置过密码');
+      return throwServiceException(ServiceStatus.UserNoPassword);
     }
     const passwordMatch = await verifyPassword(password, user.password);
     if (!passwordMatch) {
-      return throwHttpException('Invalid username or password');
+      return throwServiceException(ServiceStatus.UserNameOrPasswordError);
     }
     return userRepository.findUserByUserId(user.userId);
   }

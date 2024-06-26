@@ -1,61 +1,90 @@
 import { ItemTypes } from '@/constants';
-import { throwHttpException } from '@/utils/throwHttpException';
-import { getClient, getDB, convertToObjectId } from '@/helpers/mongo/index';
+import { throwServiceException, ServiceStatus } from '@/helpers/exception';
+import {
+  getDB,
+  convertToObjectId,
+  withTransaction,
+} from '@/helpers/mongo/index';
 import { isEmpty } from 'lodash';
 
-export const findOne = (...args) => {
-  return getDB()
-    .collection('iNode')
-    .findOne(...args);
-};
-
-export const findOneById = (id) => {
-  return getDB()
-    .collection('iNode')
-    .findOne({
-      _id: convertToObjectId(id),
-    });
-};
-
-export const createDirectory = async (ownerId, createINodeDto: any = {}) => {
-  const parentId = createINodeDto.parentId;
-  const name = createINodeDto.name;
-  const description = createINodeDto.description;
-
+/**
+ * inode
+ */
+export const createINode = ({ ownerId, parentId, ...nodeDto }) => {
+  const now = new Date();
   const doc: any = {
     type: 'd',
-    ownerId: convertToObjectId(ownerId),
-    item: {
-      name: name,
-      description: description,
-    },
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now,
+    updatedAt: now,
+    records: [],
+    ...nodeDto,
   };
   if (parentId) {
     doc.parentId = convertToObjectId(parentId);
   }
-
+  doc.ownerId = convertToObjectId(ownerId);
+  console.log('createINode', doc);
   return getDB().collection('iNode').insertOne(doc);
 };
 
-export const updateDirectory = (iNodeId, updateDirectoryDto: any = {}) => {
-  const name = updateDirectoryDto.name;
-  const description = updateDirectoryDto.description;
+export const updateINodeById = (id, { $set, ...rest }) => {
   return getDB()
     .collection('iNode')
     .updateOne(
       {
-        _id: convertToObjectId(iNodeId),
+        _id: convertToObjectId(id),
       },
       {
         $set: {
-          'item.name': name,
-          'item.description': description,
           updatedAt: new Date(),
+          ...$set,
         },
+        ...rest,
       },
     );
+};
+
+export const createLeafNode = (nodeDto: any = {}) => {
+  return createINode({
+    type: '-',
+    ...nodeDto,
+  });
+};
+
+export const createParentNode = (nodeDto: any = {}) => {
+  return createINode({
+    type: 'd',
+    ...nodeDto,
+  });
+};
+
+/**
+ * directory
+ */
+export const createDirectory = ({
+  ownerId,
+  parentId,
+  name,
+  description,
+}: any = {}) => {
+  const doc: any = {
+    ownerId: ownerId,
+    parentId: parentId,
+    item: {
+      name: name,
+      description: description,
+    },
+  };
+  return createINode(doc);
+};
+
+export const updateDirectory = (iNodeId, { name, description }: any = {}) => {
+  return updateINodeById(iNodeId, {
+    $set: {
+      'item.name': name,
+      'item.description': description,
+    },
+  });
 };
 
 export const updateItem = async (
@@ -128,23 +157,20 @@ export const updateItem = async (
   return getDB().collection('iNode').update(options);
 };
 
-export const createItem = async (itemDto: any = {}, ownerId) => {
-  const parentId = itemDto.parentId;
+export const createItem = async ({
+  ownerId,
+  parentId,
+  ...itemDto
+}: any = {}) => {
   const doc: any = {
-    type: '-',
+    ownerId: ownerId,
+    parentId: parentId,
     item: {
       ...itemDto,
       type: ItemTypes.PROJECT,
     },
-    records: [],
-    createdAt: new Date(),
   };
-  doc.ownerId = convertToObjectId(ownerId);
-  if (parentId) {
-    doc.parentId = convertToObjectId(parentId);
-  }
-  console.log('createItem', doc);
-  return getDB().collection('iNode').insertOne(doc);
+  return createLeafNode(doc);
 };
 
 export const updateItemInfo = (iNodeId, createProjectDto: any = {}) => {
@@ -203,7 +229,7 @@ export const upsertTemplate = async (ownerId, templateDto: any = {}) => {
         },
       });
     if (versionRecord?.length) {
-      return throwHttpException('数据库里已经存在该版本了，请修改后重新提交');
+      return throwServiceException(ServiceStatus.VersionAlreadyPresent);
     }
     return updateItem(
       { ownerId },
@@ -219,17 +245,6 @@ export const upsertTemplate = async (ownerId, templateDto: any = {}) => {
       {},
     );
   } else {
-    return createItem(
-      { ownerId },
-      {
-        ...templateDto,
-        type: ItemTypes.TEMPLATE,
-        name: templateDto.showName,
-        typeData: {
-          ...typeData,
-        },
-      },
-    );
   }
 };
 
@@ -292,38 +307,9 @@ export const remove = async (iNodeId: string) => {
     .delete({
       where: { id: iNodeId },
     });
-
-  const session = getClient().startSession();
-  session.startTransaction();
-  try {
+  return withTransaction(async () => {
     await Promise.all([deleteChildren, deleteAcl, deleteCurrent]);
-    await session.commitTransaction();
-  } catch (error) {
-    await session.abortTransaction();
-    throw error;
-  } finally {
-    session.endSession();
-  }
-};
-
-export const findUnique = async (id: string) => {
-  return getDB()
-    .collection('iNode')
-    .findUnique({
-      where: { id },
-      include: {
-        item: {
-          include: {
-            records: {
-              take: 10,
-              orderBy: {
-                createdAt: 'desc',
-              },
-            },
-          },
-        },
-      },
-    });
+  });
 };
 
 export const findTemplateNodeByTemplateName = async (templateName?: string) => {
@@ -405,4 +391,42 @@ export const checkUserHasAccessToNode = async (
       return false;
     }
   }
+};
+
+/**
+ * acl
+ */
+export const setFileAcl = async ({ iNodeId, toUserId }) => {
+  const permissions = 'rwx';
+  const query = {
+    iNodeId: convertToObjectId(iNodeId),
+    userId: convertToObjectId(toUserId),
+  };
+  const update = {
+    $set: {
+      iNodeId: convertToObjectId(iNodeId),
+      userId: convertToObjectId(toUserId),
+      permissions,
+    },
+  };
+  const options = { upsert: true };
+  return getDB().collection('acl').updateOne(query, update, options);
+};
+
+/**
+ * query
+ */
+
+export const findOneById = (id) => {
+  return getDB()
+    .collection('iNode')
+    .findOne({
+      _id: convertToObjectId(id),
+    });
+};
+
+export const findOne = (...args) => {
+  return getDB()
+    .collection('iNode')
+    .findOne(...args);
 };
