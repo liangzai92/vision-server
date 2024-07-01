@@ -9,9 +9,10 @@ import * as iNodeRepository from '../i-node/i-node.repository';
 export class ItemService {
   constructor(private readonly iNodeService: INodeService) {}
 
-  async createItem({ name, description }: any, { ownerId }) {
+  async createItem({ parentId, name, description }: any, { ownerId }) {
     const result = await iNodeRepository.createItem({
       ownerId: ownerId,
+      parentId: parentId,
       name: name,
       description: description,
     });

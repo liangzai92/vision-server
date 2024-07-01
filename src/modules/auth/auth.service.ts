@@ -15,7 +15,7 @@ export class AuthService {
     return this.userService.createUser(registerInput);
   }
 
-  async login(name, password) {
+  async loginWithPassword(name, password) {
     const user = await this.userService.authenticateUserByUserNameAndPassword(
       name,
       password,

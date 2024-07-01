@@ -46,7 +46,7 @@ export class INodeService {
     });
   }
 
-  remove(id: string) {
+  async remove(id: string) {
     return iNodeRepository.remove(id);
   }
 
@@ -135,30 +135,36 @@ export class INodeService {
     return res;
   }
 
-  async findOneById(id: string) {
+  findOneById(id: string) {
     return iNodeRepository.findOneById(id);
   }
 
   async setFileAcl(aclData: any, { operatorId }) {
     const { iNodeId, to } = aclData;
     const toUserId = to.userId;
-    console.log('用户', operatorId, '把', iNodeId, '分享给', toUserId);
+    console.log(
+      '用户：',
+      operatorId,
+      '把项目',
+      iNodeId,
+      '分享给用户：',
+      toUserId,
+    );
     const node = await this.findOneById(iNodeId);
     if (!node) {
       return throwServiceException(ServiceStatus.ItemNotFound);
     }
-    if (node.ownerId.equals(convertToObjectId(operatorId))) {
-      return throwServiceException(ServiceStatus.OwnerNoNeedToShare);
+    if (!node.ownerId.equals(convertToObjectId(operatorId))) {
+      return throwServiceException(ServiceStatus.YouDontHaveSharePermission);
     }
     let toUser: any = null;
     if (toUserId) {
       toUser = await this.userService.findUserByUserId(toUserId);
     }
-    console.log('分享给用户：', toUser);
     if (!toUser) {
       return throwServiceException(ServiceStatus.UserNotFound);
     }
-    if (node.ownerId === toUser.userId) {
+    if (node.ownerId.equals(toUser.userId)) {
       return throwServiceException(ServiceStatus.OwnerNoNeedToShare);
     }
     const updateResult = await iNodeRepository.setFileAcl({
@@ -171,9 +177,12 @@ export class INodeService {
     return false;
   }
 
-  async getUserNodesSharedByOtherUsers(userId, payload: any = {}) {
-    if (!payload.parentId) {
-      return this.getTopLevelUserNodesSharedByOtherUsers(userId, payload);
+  async getUserNodesSharedByOtherUsers(
+    payload: any = {},
+    { operatorId: userId },
+  ) {
+    if (!payload?.parentId) {
+      return this.getTopLevelUserNodesSharedByOtherUsers(payload, { userId });
     } else {
       return this.getNonTopLevelUserNodesSharedByOtherUsers(
         userId,
@@ -183,7 +192,7 @@ export class INodeService {
     }
   }
 
-  async getTopLevelUserNodesSharedByOtherUsers(userId, payload: any = {}) {
+  async getTopLevelUserNodesSharedByOtherUsers(payload: any = {}, { userId }) {
     const condition = {
       userId: userId,
       permissions: {

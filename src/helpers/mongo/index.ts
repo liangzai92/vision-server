@@ -1,3 +1,4 @@
+import { convertToNumber } from '@/utils';
 import { MongoClient, ObjectId } from 'mongodb';
 const MONGO_CONNECTION_STRING = process.env.MONGO_CONNECTION_STRING;
 
@@ -54,8 +55,8 @@ export const findWithPagination = async (
     pageSize: 10,
   },
 ) => {
-  const page = payload.page || 1;
-  const pageSize = payload.pageSize || 10;
+  const page = convertToNumber(payload.page) || 1;
+  const pageSize = convertToNumber(payload.pageSize) || 10;
   const skip = (page - 1) * pageSize;
   const take = pageSize;
   const totalCount = await collection.countDocuments(condition);

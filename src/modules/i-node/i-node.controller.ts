@@ -60,10 +60,9 @@ export class INodeController {
   @Get('acl')
   getUserNodesSharedByOtherUsers(@Req() request, @Query() params) {
     const operatorId = request.user?.userId;
-    return this.iNodeService.getUserNodesSharedByOtherUsers(
-      request.user?.userId,
-      params,
-    );
+    return this.iNodeService.getUserNodesSharedByOtherUsers(params, {
+      operatorId,
+    });
   }
 
   @Get(':id')

@@ -34,9 +34,9 @@ export class AuthController {
   @UseInterceptors(TokenInterceptor)
   @Public()
   @Post('login')
-  async login(@Body() body: { name: string; password: string }) {
+  async loginWithPassword(@Body() body: { name: string; password: string }) {
     const { name, password } = body;
-    return this.authService.login(name, password);
+    return this.authService.loginWithPassword(name, password);
   }
 
   @Public()
@@ -70,7 +70,7 @@ export class AuthController {
       userAgent,
       ip,
     });
-    console.log('verifyAuthCode', [err, res]);
+    // console.log('verifyAuthCode', [err, res]);
     if (err) {
       if (res?.data?.msg) {
         throw new Error(res.data.msg);
@@ -87,7 +87,7 @@ export class AuthController {
         ua: userAgent,
       },
     );
-    console.log('getUserByAccount', [err2, res2]);
+    // console.log('getUserByAccount', [err2, res2]);
     let xdfStaffAccountInfo: any = {};
     if (!err2 && res2) {
       xdfStaffAccountInfo = res2;

@@ -6,25 +6,18 @@ import { v4 as uuidv4 } from 'uuid';
 import { tryCatchWrapper } from '@/utils/tryCatchWrapper';
 
 const getXDFStaffSSOConfig = () => {
-  if (process.env.NODE_ENV === 'production') {
-    return {
-      BASE_URL: 'https://teste2api.test.xdf.cn',
-      APP_ID: 'test_x3mofang',
-      APP_KEY: 'test_x3k_1d87798a44b144d6bb6cb4bbe5cfd24d',
-    };
-  }
   return {
-    BASE_URL: 'https://teste2api.test.xdf.cn',
-    APP_ID: 'test_x3mofang',
-    APP_KEY: 'test_x3k_1d87798a44b144d6bb6cb4bbe5cfd24d',
+    BASE_URL: process.env.XDF_STAFF_SSO_CONFIG_BASE_URL,
+    APP_ID: process.env.XDF_STAFF_SSO_CONFIG_APP_ID,
+    APP_KEY: process.env.XDF_STAFF_SSO_CONFIG_APP_KEY,
+    BASE_RETURN_URL: process.env.XDF_STAFF_SSO_CONFIG_BASE_RETURN_URL,
   };
 };
 const XDF_STAFF_SSO_CONFIG = getXDFStaffSSOConfig();
 
 export const getLoginUrl = () => {
   const baseUrl = XDF_STAFF_SSO_CONFIG.BASE_URL + '/e2/qr';
-  const returnUrl =
-    'https://xone-txgw1.test.xdf.cn/daxue-node-mofang-server-5435/auth/xdf/staff/login';
+  const returnUrl = XDF_STAFF_SSO_CONFIG.BASE_RETURN_URL;
   const mergedSearchParams = {
     x3id: XDF_STAFF_SSO_CONFIG.APP_ID,
     state: uuidv4(),

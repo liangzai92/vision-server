@@ -24,6 +24,7 @@ export enum ServiceStatus {
   ExternalServiceError = 1016,
   VersionAlreadyPresent = 1017,
   OwnerNoNeedToShare = 1018,
+  YouDontHaveSharePermission = 232,
 }
 
 export const ServiceStatusDetail = {
@@ -89,5 +90,8 @@ export const ServiceStatusDetail = {
   },
   [ServiceStatus.OwnerNoNeedToShare]: {
     message: '您是项目的主人，无需再分享给自己',
+  },
+  [ServiceStatus.YouDontHaveSharePermission]: {
+    message: '您没有分享的权限',
   },
 };

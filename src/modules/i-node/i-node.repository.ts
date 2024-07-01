@@ -23,7 +23,6 @@ export const createINode = ({ ownerId, parentId, ...nodeDto }) => {
     doc.parentId = convertToObjectId(parentId);
   }
   doc.ownerId = convertToObjectId(ownerId);
-  console.log('createINode', doc);
   return getDB().collection('iNode').insertOne(doc);
 };
 
@@ -287,29 +286,27 @@ export const isTemplateVersionHasExisted = async (
 };
 
 export const remove = async (iNodeId: string) => {
-  console.log('remove', iNodeId);
   const deleteChildren = getDB()
     .collection('iNode')
     .deleteMany({
-      where: {
-        parentId: iNodeId,
-      },
+      parentId: convertToObjectId(iNodeId),
     });
   const deleteAcl = getDB()
     .collection('acl')
     .deleteMany({
-      where: {
-        iNodeId: iNodeId,
-      },
+      iNodeId: convertToObjectId(iNodeId),
     });
   const deleteCurrent = getDB()
     .collection('iNode')
-    .delete({
-      where: { id: iNodeId },
-    });
-  return withTransaction(async () => {
-    await Promise.all([deleteChildren, deleteAcl, deleteCurrent]);
+    .deleteOne({ _id: convertToObjectId(iNodeId) });
+  const res = await withTransaction(() => {
+    return Promise.all([deleteChildren, deleteAcl, deleteCurrent]);
   });
+  if (res[2].acknowledged) {
+    return true;
+  } else {
+    return false;
+  }
 };
 
 export const findTemplateNodeByTemplateName = async (templateName?: string) => {
